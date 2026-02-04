@@ -1,0 +1,36 @@
+<html lang='en'>
+    <head>
+        <meta charset='UTF-8' />
+        <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+        <title>SweetSteps Landing Page</title>
+        <!-- Preconnect to Google Fonts for performance -->
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <!-- Load Cantata One for headings and Source Sans Pro (SN Pro alternative) for body -->
+        <link href="https://fonts.googleapis.com/css2?family=Cantata+One&family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+        <script>
+            // Set up process.env for Internet Identity URL configuration
+            // This must run before the React app loads
+            window.process = window.process || {};
+            window.process.env = window.process.env || {};
+            
+            // Read II_URL from Vite HTML env replacement
+            const iiUrl = '%VITE_II_URL%';
+            
+            // Use the provided URL if valid, otherwise fall back to the production II URL
+            if (iiUrl && iiUrl !== '%VITE_II_URL%' && iiUrl.trim() !== '') {
+                window.process.env.II_URL = iiUrl;
+            } else {
+                window.process.env.II_URL = 'https://identity.ic0.app';
+                console.warn(
+                    '[SweetSteps] VITE_II_URL environment variable is not set. ' +
+                    'Using default Internet Identity provider: https://identity.ic0.app'
+                );
+            }
+        </script>
+    </head>
+    <body>
+        <div id='root'></div>
+        <script type='module' src='/src/main.tsx'></script>
+    </body>
+</html>

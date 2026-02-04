@@ -1,0 +1,57 @@
+{
+  "kind": "build_request",
+  "title": "Add self-contained TaskModal with adjustable countdown timer for Daily SweetSteps",
+  "priority": "normal",
+  "requirements": [
+    {
+      "id": "REQ-5",
+      "text": "Create a new fully self-contained React component named `TaskModal` (TypeScript + JSX + hooks) that renders a centered modal overlay for a Daily SweetStep task, including an adjustable countdown timer (start/pause/cancel) and a completion confirmation step that triggers callbacks.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-5"
+        ],
+        "quotes": [
+          "Create a new React component called TaskModal.",
+          "This modal opens when the user taps a daily SweetStep. It should display the task details, allow the user to set a timer, run the timer, pause it, and then confirm whether they finished the task. If they finished, call the reward callback and close the modal.",
+          "The component must be fully self-contained.",
+          "If isOpen is false, the modal should return null.",
+          "Timer must use setInterval (1 second).",
+          "Cancel resets everything to initial modal state.",
+          "Closing the modal should also reset its internal state."
+        ]
+      },
+      "acceptanceCriteria": [
+        "A new component `TaskModal` is added as a single React component file (no additional files created/modified).",
+        "Props are exactly: `isOpen: boolean`, `task: { title: string; description: string; estimatedMinutes: number }`, `onClose: () => void`, `onComplete: () => void`.",
+        "When `isOpen` is `false`, the component returns `null` and does not render any DOM.",
+        "When `isOpen` is `true`, the UI shows a centered modal with a dark translucent backdrop and a card that includes: task title, description, estimated time in minutes, a slider to adjust the timer from 5 to 60 minutes, and a “Start Timer” button.",
+        "Starting the timer uses `setInterval` with a 1-second tick to decrement remaining time and displays countdown in `mm:ss` format while running.",
+        "While running, the UI shows the countdown plus a “Pause” button and a “Cancel Timer” button.",
+        "Pausing stops the interval without resetting remaining time; resuming continues from the paused remaining time.",
+        "Cancel resets the modal’s internal timer state back to the initial state (including slider value and countdown display state).",
+        "When the countdown reaches 0, the modal shows: “Did you finish this task?” with two buttons: YES and NO.",
+        "Pressing YES calls `onComplete()`, then calls `onClose()`, and resets internal state so reopening starts fresh.",
+        "Pressing NO resets the timer UI to the initial modal state (ready to set time/start again).",
+        "Closing the modal (via `onClose`) also resets all internal state, including clearing any active interval.",
+        "Styling uses the existing SweetSteps palette (dark backgrounds + warm accents), rounded corners, soft shadows, and a smooth fade-in animation; buttons look consistent with existing app buttons.",
+        "No backend calls are added."
+      ]
+    }
+  ],
+  "constraints": [
+    "Frontend-only change: do not add or modify any backend code.",
+    "Do not change any other files besides adding the new `TaskModal` component file.",
+    "Component must be self-contained and manage its own internal timer state (including reset on close).",
+    "Timer implementation must use `setInterval` with 1-second updates."
+  ],
+  "nonGoals": [
+    "Wiring `TaskModal` into `Daily SweetSteps` page behavior (opening the modal on step tap) is out of scope for this request.",
+    "Persisting timer state across route changes or page refresh is out of scope.",
+    "Adding any new global CSS, editing Tailwind config, or changing shared UI components is out of scope."
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  }
+}

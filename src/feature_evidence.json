@@ -1,0 +1,24 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-create-a-new-fully-self-contained-react-component-named-taskmodal-typescript-jsx-hooks-that-renders-a-centered-modal-overlay-for-a-daily-sweetstep-task-including-an-adjustable-countdown-timer-start-pause-cancel-and-a-completion-confirmation-step-that-triggers-callbacks",
+      "featureTitle": "Create a new fully self-contained React component named `TaskModal` (TypeScript + JSX + hooks) that renders a centered modal overlay for a Daily SweetStep task, including an adjustable countdown timer (start/pause/cancel) and a completion confirmation step that triggers callbacks.",
+      "files": [
+        "frontend/src/components/TaskModal.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-5"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

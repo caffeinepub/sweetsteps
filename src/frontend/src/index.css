@@ -1,0 +1,130 @@
+/**
+ * SINGLE SOURCE OF TRUTH FOR GLOBAL STYLES
+ * This file defines all Tailwind base styles, OKLCH color tokens, and typography.
+ * Do not create duplicate global CSS files. All theme customization happens here.
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --radius: 0.75rem;
+        
+        /* Chocolate Dark Theme - Default */
+        /* Background: Deep chocolate brown #1a1a1a */
+        --background: 0.12 0.01 30;
+        /* Foreground: Warm cream text #f5e6d3 */
+        --foreground: 0.93 0.03 60;
+        
+        /* Card: Rich chocolate surface #2a2a2a */
+        --card: 0.18 0.01 30;
+        --card-foreground: 0.93 0.03 60;
+        
+        /* Popover: Slightly lighter chocolate */
+        --popover: 0.20 0.01 30;
+        --popover-foreground: 0.93 0.03 60;
+        
+        /* Primary: Caramel/toffee accent #c58b55 */
+        --primary: 0.68 0.10 50;
+        --primary-foreground: 0.98 0.01 60;
+        
+        /* Secondary: Darker caramel hover #e7a66f */
+        --secondary: 0.75 0.10 45;
+        --secondary-foreground: 0.98 0.01 60;
+        
+        /* Muted: Mid-tone chocolate */
+        --muted: 0.25 0.01 30;
+        --muted-foreground: 0.65 0.02 50;
+        
+        /* Accent: Warm amber highlight */
+        --accent: 0.70 0.12 55;
+        --accent-foreground: 0.98 0.01 60;
+        
+        /* Destructive: Warm red for errors */
+        --destructive: 0.60 0.22 25;
+        --destructive-foreground: 0.98 0.01 60;
+        
+        /* Borders and inputs: Subtle chocolate borders */
+        --border: 0.30 0.01 30;
+        --input: 0.30 0.01 30;
+        --ring: 0.68 0.10 50;
+        
+        /* Chart colors: Chocolate-inspired palette */
+        --chart-1: 0.68 0.10 50;
+        --chart-2: 0.75 0.10 45;
+        --chart-3: 0.70 0.12 55;
+        --chart-4: 0.60 0.08 40;
+        --chart-5: 0.80 0.12 60;
+        
+        /* Sidebar: Matches card surface */
+        --sidebar: 0.18 0.01 30;
+        --sidebar-foreground: 0.93 0.03 60;
+        --sidebar-primary: 0.68 0.10 50;
+        --sidebar-primary-foreground: 0.98 0.01 60;
+        --sidebar-accent: 0.25 0.01 30;
+        --sidebar-accent-foreground: 0.93 0.03 60;
+        --sidebar-border: 0.30 0.01 30;
+        --sidebar-ring: 0.45 0.01 30;
+    }
+
+    .dark {
+        /* Dark mode uses same chocolate theme as default */
+        --background: 0.12 0.01 30;
+        --foreground: 0.93 0.03 60;
+        --card: 0.18 0.01 30;
+        --card-foreground: 0.93 0.03 60;
+        --popover: 0.20 0.01 30;
+        --popover-foreground: 0.93 0.03 60;
+        --primary: 0.68 0.10 50;
+        --primary-foreground: 0.98 0.01 60;
+        --secondary: 0.75 0.10 45;
+        --secondary-foreground: 0.98 0.01 60;
+        --muted: 0.25 0.01 30;
+        --muted-foreground: 0.65 0.02 50;
+        --accent: 0.70 0.12 55;
+        --accent-foreground: 0.98 0.01 60;
+        --destructive: 0.60 0.22 25;
+        --destructive-foreground: 0.98 0.01 60;
+        --border: 0.30 0.01 30;
+        --input: 0.30 0.01 30;
+        --ring: 0.68 0.10 50;
+        --chart-1: 0.68 0.10 50;
+        --chart-2: 0.75 0.10 45;
+        --chart-3: 0.70 0.12 55;
+        --chart-4: 0.60 0.08 40;
+        --chart-5: 0.80 0.12 60;
+        --sidebar: 0.18 0.01 30;
+        --sidebar-foreground: 0.93 0.03 60;
+        --sidebar-primary: 0.68 0.10 50;
+        --sidebar-primary-foreground: 0.98 0.01 60;
+        --sidebar-accent: 0.25 0.01 30;
+        --sidebar-accent-foreground: 0.93 0.03 60;
+        --sidebar-border: 0.30 0.01 30;
+        --sidebar-ring: 0.45 0.01 30;
+    }
+
+    * {
+        @apply border-border;
+    }
+    
+    body {
+        @apply bg-background text-foreground font-sans;
+    }
+    
+    /* Global typography: Cantata One for headings, Source Sans 3 for body */
+    h1, h2, h3, h4, h5, h6 {
+        @apply font-heading;
+    }
+}
+
+@layer utilities {
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+    }
+    .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+}
