@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-create-a-new-fully-self-contained-react-component-named-taskmodal-typescript-jsx-hooks-that-renders-a-centered-modal-overlay-for-a-daily-sweetstep-task-including-an-adjustable-countdown-timer-start-pause-cancel-and-a-completion-confirmation-step-that-triggers-callbacks",
-      "featureTitle": "Create a new fully self-contained React component named `TaskModal` (TypeScript + JSX + hooks) that renders a centered modal overlay for a Daily SweetStep task, including an adjustable countdown timer (start/pause/cancel) and a completion confirmation step that triggers callbacks.",
+      "featureId": "feature-update-the-daily-sweetsteps-page-header-to-display-the-title-today-s-sweetsteps-and-also-display-today-s-date-in-the-header-in-english-remove-the-current-header-text-daily-sweetsteps",
+      "featureTitle": "Update the Daily SweetSteps page header to display the title \"Today's SweetSteps\" and also display today's date in the header (in English). Remove the current header text \"Daily SweetSteps\".",
       "files": [
-        "frontend/src/components/TaskModal.tsx"
+        "frontend/src/pages/Daily.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -17,6 +17,44 @@
       ],
       "testIds": [
         "REQ-5"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-on-the-daily-sweetsteps-page-remove-the-in-card-heading-today-s-sweetsteps-from-the-tasks-container-card-and-remove-the-border-and-background-color-from-the-card-container-that-wraps-the-full-tasks-list-while-keeping-each-individual-task-row-styling-intact",
+      "featureTitle": "On the Daily SweetSteps page, remove the in-card heading \"Today's SweetSteps\" from the tasks container card, and remove the border and background color from the card/container that wraps the full tasks list (while keeping each individual task row styling intact).",
+      "files": [
+        "frontend/src/pages/Daily.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-6"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-wire-the-daily-sweetsteps-task-list-so-that-clicking-tapping-a-task-opens-the-existing-taskmodal-and-passes-the-selected-task-data-into-it-the-modal-must-show-the-selected-task-title-include-a-reasonable-description-derived-from-the-task-if-no-description-exists-in-the-data-and-set-the-modal-s-initial-timer-minutes-based-on-the-task-s-time-value-closing-the-modal-returns-to-the-list-completing-the-task-via-the-modal-should-execute-the-existing-oncomplete-callback-flow-and-then-close",
+      "featureTitle": "Wire the Daily SweetSteps task list so that clicking/tapping a task opens the existing TaskModal and passes the selected task data into it. The modal must show the selected task title, include a reasonable description derived from the task (if no description exists in the data), and set the modal's initial timer minutes based on the task's time value. Closing the modal returns to the list. Completing the task via the modal should execute the existing onComplete callback flow (and then close).",
+      "files": [
+        "frontend/src/pages/Daily.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-7"
       ],
       "confidence": "high"
     }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 20,
+  "projectStateVersion": 25,
   "summary": "SweetSteps is an Internet Computer (ICP) dapp with a Motoko backend canister and a React (Vite) single-page frontend. It uses DFINITY Internet Identity for authentication, bootstraps backend RBAC via a shared secret, and gates a one-time onboarding flow that generates a placeholder (or optionally AI-generated) goal plan. The frontend provides core routes for Landing, Signup/Login, a multi-step Onboarding wizard with a plan preview carousel, placeholder Weekly/Daily dashboards, and a Chocolate Fridge rewards dashboard with period toggles and inventory cards. Styling is a chocolate-themed Tailwind/shadcn-ui design system using OKLCH tokens and Google Fonts.",
   "existing_features": [
     {
@@ -448,18 +448,52 @@
       "version": 1
     },
     {
-      "id": "feature-create-a-new-fully-self-contained-react-component-named-taskmodal-typescript-jsx-hooks-that-renders-a-centered-modal-overlay-for-a-daily-sweetstep-task-including-an-adjustable-countdown-timer-start-pause-cancel-and-a-completion-confirmation-step-that-triggers-callbacks",
-      "title": "Create a new fully self-contained React component named `TaskModal` (TypeScript + JSX + hooks) that renders a centered modal overlay for a Daily SweetStep task, including an adjustable countdown timer (start/pause/cancel) and a completion confirmation step that triggers callbacks.",
+      "id": "IF-40",
+      "title": "Daily SweetSteps TaskModal with adjustable timer and completion callback",
+      "synonyms": [
+        "TaskModal",
+        "Daily task modal",
+        "timer modal"
+      ],
+      "description": "Adds a self-contained `TaskModal` component for Daily SweetSteps that displays task details, provides an adjustable timer (5–60 minutes) with start/pause/cancel using `setInterval`, confirms completion, triggers an `onComplete` reward callback, and fully resets internal state on close/cancel.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-daily-sweetsteps-page-header-to-display-the-title-today-s-sweetsteps-and-also-display-today-s-date-in-the-header-in-english-remove-the-current-header-text-daily-sweetsteps",
+      "title": "Update the Daily SweetSteps page header to display the title \"Today's SweetSteps\" and also display today's date in the header (in English). Remove the current header text \"Daily SweetSteps\".",
       "reqIds": [
         "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-on-the-daily-sweetsteps-page-remove-the-in-card-heading-today-s-sweetsteps-from-the-tasks-container-card-and-remove-the-border-and-background-color-from-the-card-container-that-wraps-the-full-tasks-list-while-keeping-each-individual-task-row-styling-intact",
+      "title": "On the Daily SweetSteps page, remove the in-card heading \"Today's SweetSteps\" from the tasks container card, and remove the border and background color from the card/container that wraps the full tasks list (while keeping each individual task row styling intact).",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-wire-the-daily-sweetsteps-task-list-so-that-clicking-tapping-a-task-opens-the-existing-taskmodal-and-passes-the-selected-task-data-into-it-the-modal-must-show-the-selected-task-title-include-a-reasonable-description-derived-from-the-task-if-no-description-exists-in-the-data-and-set-the-modal-s-initial-timer-minutes-based-on-the-task-s-time-value-closing-the-modal-returns-to-the-list-completing-the-task-via-the-modal-should-execute-the-existing-oncomplete-callback-flow-and-then-close",
+      "title": "Wire the Daily SweetSteps task list so that clicking/tapping a task opens the existing TaskModal and passes the selected task data into it. The modal must show the selected task title, include a reasonable description derived from the task (if no description exists in the data), and set the modal's initial timer minutes based on the task's time value. Closing the modal returns to the list. Completing the task via the modal should execute the existing onComplete callback flow (and then close).",
+      "reqIds": [
+        "REQ-7"
       ],
       "version": 1
     }
   ],
   "new_feature_requests": [
     {
+      "id": "AR-1",
+      "summary": "Update Daily SweetSteps page UI: remove tasks container card border/background, remove in-card heading, add page header \"Today's SweetSteps\" with date display",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
       "id": "AR-2",
-      "summary": "Implement a fully self-contained TaskModal React component for Daily SweetSteps. Props: isOpen:boolean; task:{title, description, estimatedMinutes}; onClose(); onComplete(). If !isOpen return null. UI: centered modal w/ dark backdrop; card shows title/description/estimated minutes; slider to adjust timer 5–60 minutes; Start Timer. While running: countdown mm:ss, Pause, Cancel. When ends: prompt “Did you finish this task?” YES => onComplete + close; NO => reset timer UI. Logic: setInterval 1s; pause stops interval without reset; cancel and close fully reset internal state. SweetSteps dark palette, smooth fade-in, rounded + shadow. Frontend-only; no backend calls; no other file changes.",
+      "summary": "Wire Daily SweetSteps list items to open TaskModal with selected task data (title/description/estimatedMinutes) and handle onComplete reward callback/close",
       "reqIds": [],
       "status": "pending"
     }
@@ -480,7 +514,7 @@
     "Expanded `build-template/src/frontend/` to include a comprehensive shadcn-ui component set and supporting config (eslint rules/config, postcss, tsconfig, vite config), establishing the template’s baseline UI/component library footprint.",
     "`build-template/` expanded into a more complete exportable ICP CLI/GitHub-ready scaffold, adding top-level project metadata and tooling (e.g., Dockerfile, LICENSE/README, deploy script, icp.yaml, pnpm workspace/package manifests and lockfile).",
     "Daily SweetSteps task interaction will use a self-contained TaskModal controlled by props (isOpen, task, onClose, onComplete); internal timer uses setInterval and must fully reset on close/cancel.",
-    "TaskModal spec update: task prop shape is { title, description, estimatedMinutes }; modal is self-contained, returns null when closed, uses setInterval(1s) for countdown with pause/cancel, and must fully reset internal state on cancel/close; slider adjusts duration (5–60 min) and completion confirmation triggers onComplete then closes."
+    "Implemented `frontend/src/components/TaskModal.tsx` as a self-contained modal controlled via props (`isOpen`, `task`, `onClose`, `onComplete`); timer runs via `setInterval` and state fully resets on close/cancel."
   ],
   "known_issues": [
     "Backend RBAC assignments and onboarding completion state are stored in non-stable, in-memory maps; canister upgrades/reinstalls will lose roles and onboarding completion data.",

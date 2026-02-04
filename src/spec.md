@@ -1,12 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Add a fully self-contained `TaskModal` React component for Daily SweetSteps that provides an adjustable countdown timer flow and completion confirmation, triggering callbacks.
+**Goal:** Update the Daily SweetSteps page UI and interactions so the header shows “Today's SweetSteps” with today’s date, the task list container is simplified, and tapping a task opens the existing TaskModal with task-specific details.
 
 **Planned changes:**
-- Add a new single-file React component `TaskModal` (TypeScript + JSX + hooks) with props: `isOpen`, `task`, `onClose`, `onComplete`.
-- Implement a centered modal overlay (dark translucent backdrop + styled card) showing task details, estimated minutes, a 5–60 minute slider, and timer controls (start/pause/resume/cancel) using a 1-second `setInterval` countdown in `mm:ss`.
-- Add a completion confirmation step when the timer hits 0 (YES calls `onComplete()` then `onClose()`; NO resets to initial timer setup state).
-- Ensure closing the modal and cancelling both reset all internal state and clear any active interval; return `null` when `isOpen` is false.
+- Change the /daily page header title to exactly “Today's SweetSteps” and add today’s date in a readable English format; remove any “Daily SweetSteps” header text.
+- Remove the in-container heading “Today's SweetSteps” from the tasks list wrapper, and remove the wrapper’s border and background while keeping individual task row styling intact.
+- Make each task row clickable/tappable to open the existing TaskModal, passing the selected task data to populate the modal title, a non-empty description (derived from task text if needed), and initial timer minutes from the task’s time value; ensure close/backdrop closes and completion uses the existing onComplete flow then closes.
 
-**User-visible outcome:** When integrated by the app later, opening the modal for a task will let users set and run a countdown timer, pause/resume or cancel it, and confirm completion to trigger the provided callbacks.
+**User-visible outcome:** On the Daily page, users see “Today's SweetSteps” with today’s date, a cleaner task list container, and can tap any task to open the TaskModal pre-filled for that task and complete it through the existing flow.

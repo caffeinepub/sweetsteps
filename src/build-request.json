@@ -1,54 +1,76 @@
 {
   "kind": "build_request",
-  "title": "Add self-contained TaskModal with adjustable countdown timer for Daily SweetSteps",
+  "title": "Daily SweetSteps: Open TaskModal from task taps + update header and task container styling",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-5",
-      "text": "Create a new fully self-contained React component named `TaskModal` (TypeScript + JSX + hooks) that renders a centered modal overlay for a Daily SweetStep task, including an adjustable countdown timer (start/pause/cancel) and a completion confirmation step that triggers callbacks.",
+      "text": "Update the Daily SweetSteps page header to display the title \"Today's SweetSteps\" and also display today's date in the header (in English). Remove the current header text \"Daily SweetSteps\".",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-5"
+          "msg-1"
         ],
         "quotes": [
-          "Create a new React component called TaskModal.",
-          "This modal opens when the user taps a daily SweetStep. It should display the task details, allow the user to set a timer, run the timer, pause it, and then confirm whether they finished the task. If they finished, call the reward callback and close the modal.",
-          "The component must be fully self-contained.",
-          "If isOpen is false, the modal should return null.",
-          "Timer must use setInterval (1 second).",
-          "Cancel resets everything to initial modal state.",
-          "Closing the modal should also reset its internal state."
+          "change the HEADER of the page to \"Today's SweetSteps\" , and also add the date as well please"
         ]
       },
       "acceptanceCriteria": [
-        "A new component `TaskModal` is added as a single React component file (no additional files created/modified).",
-        "Props are exactly: `isOpen: boolean`, `task: { title: string; description: string; estimatedMinutes: number }`, `onClose: () => void`, `onComplete: () => void`.",
-        "When `isOpen` is `false`, the component returns `null` and does not render any DOM.",
-        "When `isOpen` is `true`, the UI shows a centered modal with a dark translucent backdrop and a card that includes: task title, description, estimated time in minutes, a slider to adjust the timer from 5 to 60 minutes, and a “Start Timer” button.",
-        "Starting the timer uses `setInterval` with a 1-second tick to decrement remaining time and displays countdown in `mm:ss` format while running.",
-        "While running, the UI shows the countdown plus a “Pause” button and a “Cancel Timer” button.",
-        "Pausing stops the interval without resetting remaining time; resuming continues from the paused remaining time.",
-        "Cancel resets the modal’s internal timer state back to the initial state (including slider value and countdown display state).",
-        "When the countdown reaches 0, the modal shows: “Did you finish this task?” with two buttons: YES and NO.",
-        "Pressing YES calls `onComplete()`, then calls `onClose()`, and resets internal state so reopening starts fresh.",
-        "Pressing NO resets the timer UI to the initial modal state (ready to set time/start again).",
-        "Closing the modal (via `onClose`) also resets all internal state, including clearing any active interval.",
-        "Styling uses the existing SweetSteps palette (dark backgrounds + warm accents), rounded corners, soft shadows, and a smooth fade-in animation; buttons look consistent with existing app buttons.",
-        "No backend calls are added."
+        "On /daily, the page header title reads exactly: \"Today's SweetSteps\"",
+        "The header also shows today's date (e.g., a readable English format such as \"February 4, 2026\")",
+        "The header no longer displays \"Daily SweetSteps\" anywhere"
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "text": "On the Daily SweetSteps page, remove the in-card heading \"Today's SweetSteps\" from the tasks container card, and remove the border and background color from the card/container that wraps the full tasks list (while keeping each individual task row styling intact).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "please remove the border and background color from the card that contains all the tasks",
+          "Please remove that as well"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The tasks list wrapper no longer has a visible border",
+        "The tasks list wrapper no longer has a background fill (appears transparent against the page background)",
+        "The in-wrapper heading \"Today's SweetSteps\" is removed",
+        "Each task row still renders with its existing row-level styling (border/background/hover) unless explicitly changed by these requirements"
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "text": "Wire the Daily SweetSteps task list so that clicking/tapping a task opens the existing TaskModal and passes the selected task data into it. The modal must show the selected task title, include a reasonable description derived from the task (if no description exists in the data), and set the modal's initial timer minutes based on the task's time value. Closing the modal returns to the list. Completing the task via the modal should execute the existing onComplete callback flow (and then close).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Yup that's exactly what I want."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Clicking any task row on /daily opens TaskModal",
+        "TaskModal header title matches the clicked task's task text",
+        "TaskModal shows a non-empty description for the selected task (derived from the task text if necessary)",
+        "TaskModal initial timer minutes reflect the selected task's time (minutes) value",
+        "Clicking the close control or backdrop closes TaskModal and returns to the list",
+        "Selecting \"Yes\" after the timer finishes triggers the modal onComplete flow and closes the modal"
       ]
     }
   ],
   "constraints": [
-    "Frontend-only change: do not add or modify any backend code.",
-    "Do not change any other files besides adding the new `TaskModal` component file.",
-    "Component must be self-contained and manage its own internal timer state (including reset on close).",
-    "Timer implementation must use `setInterval` with 1-second updates."
+    "Do not edit any files under frontend/src/components/ui (shadcn components are read-only).",
+    "Do not edit files listed as immutable: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx."
   ],
   "nonGoals": [
-    "Wiring `TaskModal` into `Daily SweetSteps` page behavior (opening the modal on step tap) is out of scope for this request.",
-    "Persisting timer state across route changes or page refresh is out of scope.",
-    "Adding any new global CSS, editing Tailwind config, or changing shared UI components is out of scope."
+    "Do not add backend persistence or new backend APIs for tasks or completion rewards as part of this change.",
+    "Do not change authentication/onboarding flows as part of this change.",
+    "Do not redesign the individual task row UI beyond what is required to support click-to-open behavior."
   ],
   "imageRequirements": {
     "required": [],
