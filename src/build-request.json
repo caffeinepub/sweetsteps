@@ -1,76 +1,92 @@
 {
   "kind": "build_request",
-  "title": "Daily SweetSteps: Open TaskModal from task taps + update header and task container styling",
-  "priority": "normal",
+  "title": "Fix long post-Internet-Identity “Validating…” stall, Onboarding React crash, and force II account chooser on each Login click",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-5",
-      "text": "Update the Daily SweetSteps page header to display the title \"Today's SweetSteps\" and also display today's date in the header (in English). Remove the current header text \"Daily SweetSteps\".",
+      "text": "Fix the main /signup flow so that after Internet Identity authorization the app does not remain on the Signup page in a “Validating identity…” state for ~300 seconds. Ensure the UI either (a) progresses through auth steps promptly (identity validation → backend actor ready → routing) or (b) fails fast into a retryable error state with clear instructions, rather than waiting minutes before redirecting to /onboarding.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "change the HEADER of the page to \"Today's SweetSteps\" , and also add the date as well please"
+          "it is again taking very very long to redirect me back to SweetSteps after the Authorization.",
+          "It stays like that for around 300 seconds then goes to the Onboarding page",
+          "Please fix the errors above , the react error and the \"validating\" one."
         ]
       },
       "acceptanceCriteria": [
-        "On /daily, the page header title reads exactly: \"Today's SweetSteps\"",
-        "The header also shows today's date (e.g., a readable English format such as \"February 4, 2026\")",
-        "The header no longer displays \"Daily SweetSteps\" anywhere"
+        "On mobile and desktop, after completing Internet Identity authorization, the Signup page does not remain stuck showing only “Validating identity…” for minutes.",
+        "If backend actor creation / onboarding access checks do not complete within a reasonable timeout, the page transitions to an error state with a working Retry action (no indefinite loading).",
+        "The AuthStatusBanner step label updates to reflect the actual blocking step (e.g., connecting to backend / checking account status) instead of remaining on a generic “Validating…” label for the entire wait."
       ]
     },
     {
       "id": "REQ-6",
-      "text": "On the Daily SweetSteps page, remove the in-card heading \"Today's SweetSteps\" from the tasks container card, and remove the border and background color from the card/container that wraps the full tasks list (while keeping each individual task row styling intact).",
+      "text": "Fix the Onboarding flow crash that occurs after answering onboarding questions, reported as “Minified React error #31” attempting to render an object with keys {deadline, name, progress, reason}. Ensure onboarding plan preview rendering never attempts to directly render a non-React object; it must safely render strings/ReactNodes only, and gracefully handle unexpected AI response shapes.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "please remove the border and background color from the card that contains all the tasks",
-          "Please remove that as well"
+          "after i answer all the questions, it gives this React error",
+          "Minified React error #31; visit https://react.dev/errors/31?args[]=object%20with%20keys%20%7Bdeadline%2C%20name%2C%20progress%2C%20reason%7D"
         ]
       },
       "acceptanceCriteria": [
-        "The tasks list wrapper no longer has a visible border",
-        "The tasks list wrapper no longer has a background fill (appears transparent against the page background)",
-        "The in-wrapper heading \"Today's SweetSteps\" is removed",
-        "Each task row still renders with its existing row-level styling (border/background/hover) unless explicitly changed by these requirements"
+        "Completing onboarding and reaching the Step 4 “Sweet Summit” carousel does not crash the React app.",
+        "If any AI response fields used in Onboarding plan preview are objects/arrays instead of strings, the UI renders a safe fallback (e.g., formatted text) and continues functioning.",
+        "Errors from invalid/unexpected AI response shapes are surfaced as user-friendly messages instead of a hard React crash."
       ]
     },
     {
       "id": "REQ-7",
-      "text": "Wire the Daily SweetSteps task list so that clicking/tapping a task opens the existing TaskModal and passes the selected task data into it. The modal must show the selected task title, include a reasonable description derived from the task (if no description exists in the data), and set the modal's initial timer minutes based on the task's time value. Closing the modal returns to the list. Completing the task via the modal should execute the existing onComplete callback flow (and then close).",
+      "text": "Update Login behavior so the Internet Identity account chooser is shown on every explicit user Login click (force account selection rather than silently reusing an existing Internet Identity session). This must work reliably on mobile as well as desktop.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Yup that's exactly what I want."
+          "have you made it like, every time the user clicks on login, the II account chooser pop up?"
         ]
       },
       "acceptanceCriteria": [
-        "Clicking any task row on /daily opens TaskModal",
-        "TaskModal header title matches the clicked task's task text",
-        "TaskModal shows a non-empty description for the selected task (derived from the task text if necessary)",
-        "TaskModal initial timer minutes reflect the selected task's time (minutes) value",
-        "Clicking the close control or backdrop closes TaskModal and returns to the list",
-        "Selecting \"Yes\" after the timer finishes triggers the modal onComplete flow and closes the modal"
+        "Clicking the Login button always triggers an Internet Identity chooser/login window, even if the user previously authenticated in the same browser.",
+        "The app does not show an 'Already Logged In' dead-end screen that prevents account switching; users can always initiate account selection from the Login page.",
+        "If the chooser/popup cannot open (blocked), the UI returns quickly to a retryable state with actionable guidance."
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "text": "Ensure the auth UI state machine (Signup + Login) cannot remain in a non-terminal state after a completed Internet Identity authorization. Specifically, add explicit timeouts/guards for post-II steps (identity validation, actor readiness, onboarding check/navigation) so the UI either completes routing or shows an error with Retry without multi-minute waits.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "No, it just says \"validating\""
+        ]
+      },
+      "acceptanceCriteria": [
+        "After II authorization succeeds, the app either routes to the correct next page promptly or shows an error state within the configured post-auth timeout (no ~300s silent wait).",
+        "Retry clears the stuck state and can successfully re-run the auth pipeline without requiring a full page refresh."
       ]
     }
   ],
   "constraints": [
-    "Do not edit any files under frontend/src/components/ui (shadcn components are read-only).",
-    "Do not edit files listed as immutable: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx."
+    "Do not edit files under frontend/src/components/ui (shadcn UI components are read-only and must be composed, not modified).",
+    "Respect the existing single-canister backend architecture (no additional backend services).",
+    "Use English for all user-facing text."
   ],
   "nonGoals": [
-    "Do not add backend persistence or new backend APIs for tasks or completion rewards as part of this change.",
-    "Do not change authentication/onboarding flows as part of this change.",
-    "Do not redesign the individual task row UI beyond what is required to support click-to-open behavior."
+    "Adding new authentication providers beyond Internet Identity.",
+    "Introducing real-time communication or WebSockets.",
+    "Redesigning unrelated pages (Landing, Weekly Mountain, Daily, Fridge) beyond what is necessary to fix the described auth/onboarding issues."
   ],
   "imageRequirements": {
     "required": [],

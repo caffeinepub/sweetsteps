@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-daily-sweetsteps-page-header-to-display-the-title-today-s-sweetsteps-and-also-display-today-s-date-in-the-header-in-english-remove-the-current-header-text-daily-sweetsteps",
-      "featureTitle": "Update the Daily SweetSteps page header to display the title \"Today's SweetSteps\" and also display today's date in the header (in English). Remove the current header text \"Daily SweetSteps\".",
+      "featureId": "feature-fix-the-main-signup-flow-so-that-after-internet-identity-authorization-the-app-does-not-remain-on-the-signup-page-in-a-validating-identity-state-for-300-seconds-ensure-the-ui-either-a-progresses-through-auth-steps-promptly-identity-validation-backend-actor-ready-routing-or-b-fails-fast-into-a-retryable-error-state-with-clear-instructions-rather-than-waiting-minutes-before-redirecting-to-onboarding",
+      "featureTitle": "Fix the main /signup flow so that after Internet Identity authorization the app does not remain on the Signup page in a “Validating identity…” state for ~300 seconds. Ensure the UI either (a) progresses through auth steps promptly (identity validation → backend actor ready → routing) or (b) fails fast into a retryable error state with clear instructions, rather than waiting minutes before redirecting to /onboarding.",
       "files": [
-        "frontend/src/pages/Daily.tsx"
+        "frontend/src/pages/Signup.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -21,10 +21,13 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-on-the-daily-sweetsteps-page-remove-the-in-card-heading-today-s-sweetsteps-from-the-tasks-container-card-and-remove-the-border-and-background-color-from-the-card-container-that-wraps-the-full-tasks-list-while-keeping-each-individual-task-row-styling-intact",
-      "featureTitle": "On the Daily SweetSteps page, remove the in-card heading \"Today's SweetSteps\" from the tasks container card, and remove the border and background color from the card/container that wraps the full tasks list (while keeping each individual task row styling intact).",
+      "featureId": "feature-fix-the-onboarding-flow-crash-that-occurs-after-answering-onboarding-questions-reported-as-minified-react-error-31-attempting-to-render-an-object-with-keys-deadline-name-progress-reason-ensure-onboarding-plan-preview-rendering-never-attempts-to-directly-render-a-non-react-object-it-must-safely-render-strings-reactnodes-only-and-gracefully-handle-unexpected-ai-response-shapes",
+      "featureTitle": "Fix the Onboarding flow crash that occurs after answering onboarding questions, reported as “Minified React error #31” attempting to render an object with keys {deadline, name, progress, reason}. Ensure onboarding plan preview rendering never attempts to directly render a non-React object; it must safely render strings/ReactNodes only, and gracefully handle unexpected AI response shapes.",
       "files": [
-        "frontend/src/pages/Daily.tsx"
+        "frontend/src/lib/aiProxyClient.ts",
+        "frontend/src/pages/Onboarding.tsx",
+        "frontend/src/pages/SweetSummit.tsx",
+        "frontend/src/utils/safeRender.ts"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -40,10 +43,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-wire-the-daily-sweetsteps-task-list-so-that-clicking-tapping-a-task-opens-the-existing-taskmodal-and-passes-the-selected-task-data-into-it-the-modal-must-show-the-selected-task-title-include-a-reasonable-description-derived-from-the-task-if-no-description-exists-in-the-data-and-set-the-modal-s-initial-timer-minutes-based-on-the-task-s-time-value-closing-the-modal-returns-to-the-list-completing-the-task-via-the-modal-should-execute-the-existing-oncomplete-callback-flow-and-then-close",
-      "featureTitle": "Wire the Daily SweetSteps task list so that clicking/tapping a task opens the existing TaskModal and passes the selected task data into it. The modal must show the selected task title, include a reasonable description derived from the task (if no description exists in the data), and set the modal's initial timer minutes based on the task's time value. Closing the modal returns to the list. Completing the task via the modal should execute the existing onComplete callback flow (and then close).",
+      "featureId": "feature-update-login-behavior-so-the-internet-identity-account-chooser-is-shown-on-every-explicit-user-login-click-force-account-selection-rather-than-silently-reusing-an-existing-internet-identity-session-this-must-work-reliably-on-mobile-as-well-as-desktop",
+      "featureTitle": "Update Login behavior so the Internet Identity account chooser is shown on every explicit user Login click (force account selection rather than silently reusing an existing Internet Identity session). This must work reliably on mobile as well as desktop.",
       "files": [
-        "frontend/src/pages/Daily.tsx"
+        "frontend/src/pages/Login.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -55,6 +58,27 @@
       ],
       "testIds": [
         "REQ-7"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-the-auth-ui-state-machine-signup-login-cannot-remain-in-a-non-terminal-state-after-a-completed-internet-identity-authorization-specifically-add-explicit-timeouts-guards-for-post-ii-steps-identity-validation-actor-readiness-onboarding-check-navigation-so-the-ui-either-completes-routing-or-shows-an-error-with-retry-without-multi-minute-waits",
+      "featureTitle": "Ensure the auth UI state machine (Signup + Login) cannot remain in a non-terminal state after a completed Internet Identity authorization. Specifically, add explicit timeouts/guards for post-II steps (identity validation, actor readiness, onboarding check/navigation) so the UI either completes routing or shows an error with Retry without multi-minute waits.",
+      "files": [
+        "frontend/src/hooks/usePostAuthTimeout.ts",
+        "frontend/src/pages/Login.tsx",
+        "frontend/src/pages/Signup.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-8"
       ],
       "confidence": "high"
     }

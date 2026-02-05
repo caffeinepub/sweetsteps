@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 interface OnboardingAnswers {
-  goal: string;
-  currentStanding: string;
-  timeframe: string;
+  vagueGoal: string;
+  currentProgress: string;
+  timeLimit: string;
 }
 
 interface WeeklyMountain {

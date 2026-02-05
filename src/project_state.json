@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 25,
-  "summary": "SweetSteps is an Internet Computer (ICP) dapp with a Motoko backend canister and a React (Vite) single-page frontend. It uses DFINITY Internet Identity for authentication, bootstraps backend RBAC via a shared secret, and gates a one-time onboarding flow that generates a placeholder (or optionally AI-generated) goal plan. The frontend provides core routes for Landing, Signup/Login, a multi-step Onboarding wizard with a plan preview carousel, placeholder Weekly/Daily dashboards, and a Chocolate Fridge rewards dashboard with period toggles and inventory cards. Styling is a chocolate-themed Tailwind/shadcn-ui design system using OKLCH tokens and Google Fonts.",
+  "projectStateVersion": 162,
+  "summary": "SweetSteps is an Internet Computer (ICP) dapp with a Motoko backend canister and a React (Vite) single-page frontend. It uses DFINITY Internet Identity for authentication, bootstraps backend RBAC via a shared secret (non-blocking when unset), and gates a one-time onboarding flow. The frontend provides core routes for Landing, Signup/Login, a multi-step Onboarding wizard with plan preview carousel, Weekly/Daily dashboards, and a Chocolate Fridge rewards dashboard with period toggles and inventory cards. Styling is a chocolate-themed Tailwind/shadcn-ui design system using OKLCH tokens and Google Fonts. AI-generated content is sourced exclusively from an external proxy API (no direct provider calls) and is wired into onboarding plan generation, Weekly Mountain content, and Daily steps with strict request/response contracts plus loading/error UX. The repo also includes a reusable build/deploy template scaffold (Dockerfile, scripts, and canister configs) for packaging/exporting and deploying the app.",
   "existing_features": [
     {
       "id": "IF-1",
@@ -269,18 +269,6 @@
       "version": 1
     },
     {
-      "id": "IF-25",
-      "title": "Temporary public test shortcuts to feature pages",
-      "synonyms": [
-        "Landing test links",
-        "/daily",
-        "/fridge"
-      ],
-      "description": "Provides clearly labeled temporary buttons on the landing page that navigate directly to `/daily` and `/fridge` for UI testing.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
       "id": "IF-26",
       "title": "Hardened Internet Identity signup flow",
       "synonyms": [
@@ -460,40 +448,343 @@
       "version": 1
     },
     {
-      "id": "feature-update-the-daily-sweetsteps-page-header-to-display-the-title-today-s-sweetsteps-and-also-display-today-s-date-in-the-header-in-english-remove-the-current-header-text-daily-sweetsteps",
-      "title": "Update the Daily SweetSteps page header to display the title \"Today's SweetSteps\" and also display today's date in the header (in English). Remove the current header text \"Daily SweetSteps\".",
+      "id": "IF-41",
+      "title": "Daily SweetSteps page header with date + simplified tasks container styling",
+      "synonyms": [
+        "Today's SweetSteps header",
+        "Daily UI refresh",
+        "tasks container border removal"
+      ],
+      "description": "Updates the Daily SweetSteps page UI to add a top-level header \"Today's SweetSteps\" with a date display, and simplifies the tasks list container by removing the card border/background and removing the in-card heading.",
+      "reqIds": [
+        "AR-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-42",
+      "title": "Graceful/non-blocking RBAC initialization when CAFFEINE_ADMIN_TOKEN is missing",
+      "synonyms": [
+        "optional admin token",
+        "RBAC init does not trap",
+        "safe _initializeAccessControlWithSecret"
+      ],
+      "description": "Updates backend RBAC initialization to avoid trapping when CAFFEINE_ADMIN_TOKEN is unset/not usable, allowing Internet Identity login/signup flows to continue. Frontend auth/actor bootstrapping handles initialization failures explicitly and surfaces a recoverable error/warning rather than hanging indefinitely.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-43",
+      "title": "Reusable build-template scaffold for packaging/exporting and deploying the ICP app",
+      "synonyms": [
+        "build-template",
+        "deploy.sh",
+        "icp.yaml",
+        "Dockerfile",
+        "github-export-icp-cli"
+      ],
+      "description": "Adds a `build-template/` directory containing deploy/config assets (Dockerfile, icp.yaml, canister YAMLs, scripts like prune/resize images, and frontend tooling configs) to support reproducible packaging/export and deployment of the SweetSteps backend/frontend.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-44",
+      "title": "Mobile-friendly Internet Identity login helper with cancel/close recovery",
+      "synonyms": [
+        "useMobileInternetIdentityLogin",
+        "popup close detection",
+        "cancel recovery"
+      ],
+      "description": "Adds a dedicated mobile-oriented Internet Identity login helper that detects likely popup/chooser cancel/close or stalled initiation and ensures Login/Signup UI returns to a retryable state (avoids getting stuck in non-terminal phases like “Validating…”).",
+      "reqIds": [
+        "AR-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-45",
+      "title": "Proxy-only AI generation wired into onboarding, Weekly Mountain, and Daily (strict contracts + UX)",
+      "synonyms": [
+        "aiProxyClient",
+        "/onboarding-plan",
+        "/weekly-mountain",
+        "/daily-steps",
+        "proxy AI integration"
+      ],
+      "description": "Implements an external proxy-only AI integration via a dedicated client that calls proxy endpoints for onboarding plan generation, weekly mountain content, and daily steps. Enforces strict request/response JSON shapes, provides loading states, and shows a user-friendly fallback error when the proxy is unreachable or returns invalid/non-JSON responses (no direct Groq/OpenAI calls from the browser).",
+      "reqIds": [
+        "AR-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-46",
+      "title": "Always-visible auth validation status banner for Internet Identity flows",
+      "synonyms": [
+        "AuthStatusBanner",
+        "auth validation steps",
+        "always-on auth banner"
+      ],
+      "description": "Adds an always-visible in-app banner during login/signup that shows the current Internet Identity auth/redirect/validation step and provides clearer user feedback when auth appears stalled (no debug flag required).",
+      "reqIds": [
+        "AR-5",
+        "AR-8"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-47",
+      "title": "Auth flow diagnostics hook and utilities for step-level logging",
+      "synonyms": [
+        "useAuthFlowDiagnostics",
+        "authDiagnostics",
+        "auth step logging"
+      ],
+      "description": "Introduces a dedicated hook/utilities to track and log step-level progress through the Internet Identity auth lifecycle (init → login attempt → redirect/delegation → identity validation → backend/actor bootstrap) to help pinpoint where “Validating…” stalls occur.",
+      "reqIds": [
+        "AR-4",
+        "AR-6",
+        "AR-7",
+        "AR-8"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-48",
+      "title": "Username + password authentication (canister-stored hashed credentials) alongside Internet Identity",
+      "synonyms": [
+        "password auth",
+        "local auth",
+        "UsernamePasswordAuthForm",
+        "usePasswordIdentity"
+      ],
+      "description": "Adds an alternative authentication path using a simple username+password flow. Credentials are stored and verified entirely in the Motoko canister using hashed passwords. Frontend includes UI and hooks to sign up/log in with username+password and use the resulting identity/session for actor creation. No Internet Identity ↔ password account linking flow is required at this stage.",
+      "reqIds": [
+        "AR-12"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-49",
+      "title": "Backend canister warm-up preflight for auth flows (UI banner + hook)",
+      "synonyms": [
+        "canister warmup",
+        "preflight ping",
+        "useCanisterWarmup",
+        "CanisterWarmupBanner"
+      ],
+      "description": "Adds a frontend warm-up/preflight call to the backend canister to reduce perceived 1–2 minute stalls when the canister is cold (especially during username/password signup/login). Includes a reusable hook to run/track warm-up status and a UI banner component to communicate warm-up progress and recovery/retry guidance.",
+      "reqIds": [
+        "AR-13"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-50",
+      "title": "Guarded canister warm-up/preflight execution to prevent render/click loops (tab freeze fix)",
+      "synonyms": [
+        "warmup run-once",
+        "preflight guard",
+        "no retrigger loop",
+        "AR-14 fix"
+      ],
+      "description": "Updates the canister warm-up/preflight logic used by auth flows to be strictly guarded (e.g., run-once per page load / in-flight dedupe) so it cannot retrigger in a render or repeated click loop that previously caused severe browser tab freezes during username/password signup/login.",
+      "reqIds": [
+        "AR-14"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-51",
+      "title": "Backup SignupTest route/page for auth testing (II + username/password)",
+      "synonyms": [
+        "/signup-test",
+        "SignupTest",
+        "backup signup testing"
+      ],
+      "description": "Adds a separate SignupTest page/route intended for troubleshooting and testing signup flows without altering the primary Landing/Signup experience. The page supports Internet Identity signup and username+password fields/flow for comparison/testing.",
+      "reqIds": [
+        "AR-18"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-52",
+      "title": "Isolated Motoko AltSignup backend module for backup signup flow",
+      "synonyms": [
+        "AltSignup.mo",
+        "alternate signup module",
+        "backup signup backend"
+      ],
+      "description": "Introduces a dedicated Motoko module/file to handle the backup SignupTest username/password signup logic in an isolated way, minimizing risk of disturbing the main authentication flows.",
+      "reqIds": [
+        "AR-19"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-53",
+      "title": "Landing page test navigation updated to point to backup signup test route",
+      "synonyms": [
+        "Landing test button",
+        "backup signup test button"
+      ],
+      "description": "Updates the Landing page’s temporary testing navigation so testers can reach the backup signup test route directly from the Landing page.",
+      "reqIds": [
+        "AR-20"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-54",
+      "title": "SignupTest Internet Identity flow redirects to /onboarding after successful auth",
+      "synonyms": [
+        "/signup-test redirect",
+        "useInternetIdentitySignupTest",
+        "SignupTest II parity"
+      ],
+      "description": "Updates the backup `/signup-test` Internet Identity authentication flow so that, on successful authentication, the user is redirected to `/onboarding` (matching the primary Internet Identity signup behavior) rather than remaining on the test signup page.",
+      "reqIds": [
+        "AR-21"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-55",
+      "title": "Patched Internet Identity OAuth/authorize callback handling with trusted-origin support",
+      "synonyms": [
+        "InternetIdentityAuthorizeCallbackHandler",
+        "PatchedInternetIdentityProvider",
+        "ii-alternative-origins",
+        "#authorize hash redirect"
+      ],
+      "description": "Adds a patched Internet Identity integration to support OAuth-style callback flows by whitelisting the live frontend origin as an alternative/trusted origin and handling callback redirects back into the SPA via a `#authorize=<principal>` hash. The frontend parses the principal/authorization hash and completes the post-auth flow by redirecting users to `/onboarding` (with supporting patched mobile login helper).",
+      "reqIds": [
+        "AR-23"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-main-signup-flow-so-that-after-internet-identity-authorization-the-app-does-not-remain-on-the-signup-page-in-a-validating-identity-state-for-300-seconds-ensure-the-ui-either-a-progresses-through-auth-steps-promptly-identity-validation-backend-actor-ready-routing-or-b-fails-fast-into-a-retryable-error-state-with-clear-instructions-rather-than-waiting-minutes-before-redirecting-to-onboarding",
+      "title": "Fix the main /signup flow so that after Internet Identity authorization the app does not remain on the Signup page in a “Validating identity…” state for ~300 seconds. Ensure the UI either (a) progresses through auth steps promptly (identity validation → backend actor ready → routing) or (b) fails fast into a retryable error state with clear instructions, rather than waiting minutes before redirecting to /onboarding.",
       "reqIds": [
         "REQ-5"
       ],
       "version": 1
     },
     {
-      "id": "feature-on-the-daily-sweetsteps-page-remove-the-in-card-heading-today-s-sweetsteps-from-the-tasks-container-card-and-remove-the-border-and-background-color-from-the-card-container-that-wraps-the-full-tasks-list-while-keeping-each-individual-task-row-styling-intact",
-      "title": "On the Daily SweetSteps page, remove the in-card heading \"Today's SweetSteps\" from the tasks container card, and remove the border and background color from the card/container that wraps the full tasks list (while keeping each individual task row styling intact).",
+      "id": "feature-fix-the-onboarding-flow-crash-that-occurs-after-answering-onboarding-questions-reported-as-minified-react-error-31-attempting-to-render-an-object-with-keys-deadline-name-progress-reason-ensure-onboarding-plan-preview-rendering-never-attempts-to-directly-render-a-non-react-object-it-must-safely-render-strings-reactnodes-only-and-gracefully-handle-unexpected-ai-response-shapes",
+      "title": "Fix the Onboarding flow crash that occurs after answering onboarding questions, reported as “Minified React error #31” attempting to render an object with keys {deadline, name, progress, reason}. Ensure onboarding plan preview rendering never attempts to directly render a non-React object; it must safely render strings/ReactNodes only, and gracefully handle unexpected AI response shapes.",
       "reqIds": [
         "REQ-6"
       ],
       "version": 1
     },
     {
-      "id": "feature-wire-the-daily-sweetsteps-task-list-so-that-clicking-tapping-a-task-opens-the-existing-taskmodal-and-passes-the-selected-task-data-into-it-the-modal-must-show-the-selected-task-title-include-a-reasonable-description-derived-from-the-task-if-no-description-exists-in-the-data-and-set-the-modal-s-initial-timer-minutes-based-on-the-task-s-time-value-closing-the-modal-returns-to-the-list-completing-the-task-via-the-modal-should-execute-the-existing-oncomplete-callback-flow-and-then-close",
-      "title": "Wire the Daily SweetSteps task list so that clicking/tapping a task opens the existing TaskModal and passes the selected task data into it. The modal must show the selected task title, include a reasonable description derived from the task (if no description exists in the data), and set the modal's initial timer minutes based on the task's time value. Closing the modal returns to the list. Completing the task via the modal should execute the existing onComplete callback flow (and then close).",
+      "id": "feature-update-login-behavior-so-the-internet-identity-account-chooser-is-shown-on-every-explicit-user-login-click-force-account-selection-rather-than-silently-reusing-an-existing-internet-identity-session-this-must-work-reliably-on-mobile-as-well-as-desktop",
+      "title": "Update Login behavior so the Internet Identity account chooser is shown on every explicit user Login click (force account selection rather than silently reusing an existing Internet Identity session). This must work reliably on mobile as well as desktop.",
       "reqIds": [
         "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-auth-ui-state-machine-signup-login-cannot-remain-in-a-non-terminal-state-after-a-completed-internet-identity-authorization-specifically-add-explicit-timeouts-guards-for-post-ii-steps-identity-validation-actor-readiness-onboarding-check-navigation-so-the-ui-either-completes-routing-or-shows-an-error-with-retry-without-multi-minute-waits",
+      "title": "Ensure the auth UI state machine (Signup + Login) cannot remain in a non-terminal state after a completed Internet Identity authorization. Specifically, add explicit timeouts/guards for post-II steps (identity validation, actor readiness, onboarding check/navigation) so the UI either completes routing or shows an error with Retry without multi-minute waits.",
+      "reqIds": [
+        "REQ-8"
       ],
       "version": 1
     }
   ],
   "new_feature_requests": [
     {
-      "id": "AR-1",
-      "summary": "Update Daily SweetSteps page UI: remove tasks container card border/background, remove in-card heading, add page header \"Today's SweetSteps\" with date display",
+      "id": "AR-6",
+      "summary": "Review and verify the Internet Identity redirect/delegation handling code path to confirm it is correctly implemented (no hangs/awaits that never resolve) and identify where validation can stall.",
       "reqIds": [],
       "status": "pending"
     },
     {
-      "id": "AR-2",
-      "summary": "Wire Daily SweetSteps list items to open TaskModal with selected task data (title/description/estimatedMinutes) and handle onComplete reward callback/close",
+      "id": "AR-7",
+      "summary": "Review end-to-end Internet Identity post-redirect validation flow, including frontend redirect/delegation handling plus RBAC bootstrap and post-login actor setup, to identify causes of long 'Validating…' stalls.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "Improve AI proxy call error handling/messaging to better explain unreachable/inactive (Render free tier cold start) scenarios, with clearer guidance (e.g., expected wake-up delay, retry suggestions) across all AI-powered flows.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Update UI styling so element/token \"1kltrkn\" uses the same color as \"14f6tu6\".",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-11",
+      "summary": "Make Internet Identity login/signup feel fast by adding stricter stalled-auth timeouts (force-fail sooner), improving popup/chooser open detection, and ensuring the UI always returns quickly to a retryable state.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-16",
+      "summary": "Investigate and fix the signup freeze/hang (Internet Identity signup flow getting stuck/loading, including cases where the II popup/chooser never opens and post-login validation stalls).",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-17",
+      "summary": "Investigate and fix new full-page UI freeze/unresponsive inputs/buttons on Signup page (and Caffeine AI page) where clicking anything causes the page to hang.",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-22",
+      "summary": "Allow users who authenticated via Internet Identity but exited before completing onboarding to be prompted to choose an II account again (provide a clear 'reset identity' / force account chooser flow, especially for the backup /signup-test path).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-24",
+      "summary": "Fix Weekly Mountain dashboard so first-time users see 0% progress (no sample/placeholder progress shown after onboarding).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-25",
+      "summary": "Fix Daily SweetSteps crash when navigating from Weekly Mountain (\"Cannot read properties of undefined (reading 'map')\"); ensure tasks array is always defined or guarded.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-26",
+      "summary": "Update login behavior so returning users with an already-created account are routed directly to /weekly-mountain (instead of onboarding), while still correctly handling users who have not completed onboarding.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-27",
+      "summary": "Remove username/password authentication UI fields completely (deprecate/disable the alternative username+password auth path so Internet Identity is the only login method).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-28",
+      "summary": "Investigate and fix ~300s post-Internet-Identity redirect stall on main /signup flow where UI stays on “Validating identity…” before eventually proceeding to onboarding (mobile; no status banner step changes).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-29",
+      "summary": "Fix onboarding flow crash after answering questions: Minified React error #31 (attempting to render an object with keys {deadline, name, progress, reason}) during onboarding/plan preview rendering.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-30",
+      "summary": "Ensure Internet Identity account chooser is shown on every Login click (force account selection rather than silently reusing an existing II session), including reliable popup behavior on mobile.",
       "reqIds": [],
       "status": "pending"
     }
@@ -507,27 +798,22 @@
     "Sensitive bootstrap secrets (e.g., `caffeineAdminToken`) are expected in the URL hash, persisted in `sessionStorage`, and removed from the address bar via `history.replaceState`.",
     "Client routing uses TanStack Router with a root layout and route-based pages.",
     "UI uses Tailwind + shadcn-ui components, with global OKLCH CSS-variable tokens and Google Fonts (Cantata One + Source Sans 3).",
-    "SPA deep-link support is implemented via `public/404.html` redirecting to `index.html` for static/IC asset hosting.",
-    "An AI client exists for OpenAI-compatible chat-completions (defaulting to Groq), but onboarding currently uses a local placeholder generator rather than wiring the AI client into the onboarding flow.",
-    "Introduced a `build-template/` scaffold containing a full ICP project template (backend/frontend canister.yaml, Dockerfile, deploy scripts, workspace/package manifests) intended for reproducible builds and exports (e.g., GitHub/ICP CLI workflows).",
-    "Added `build-template/` maintenance scripts for asset/image processing (`prune-unused-images.js`, `resize-images.js`) as part of the template toolchain.",
-    "Expanded `build-template/src/frontend/` to include a comprehensive shadcn-ui component set and supporting config (eslint rules/config, postcss, tsconfig, vite config), establishing the template’s baseline UI/component library footprint.",
-    "`build-template/` expanded into a more complete exportable ICP CLI/GitHub-ready scaffold, adding top-level project metadata and tooling (e.g., Dockerfile, LICENSE/README, deploy script, icp.yaml, pnpm workspace/package manifests and lockfile).",
-    "Daily SweetSteps task interaction will use a self-contained TaskModal controlled by props (isOpen, task, onClose, onComplete); internal timer uses setInterval and must fully reset on close/cancel.",
-    "Implemented `frontend/src/components/TaskModal.tsx` as a self-contained modal controlled via props (`isOpen`, `task`, `onClose`, `onComplete`); timer runs via `setInterval` and state fully resets on close/cancel."
+    "AI generation is performed exclusively via an external proxy API client (`aiProxyClient`) with strict request/response contracts (no direct provider calls from the frontend).",
+    "Internet Identity (II) is the only supported authentication method; username/password auth UI has been removed/disabled."
   ],
   "known_issues": [
     "Backend RBAC assignments and onboarding completion state are stored in non-stable, in-memory maps; canister upgrades/reinstalls will lose roles and onboarding completion data.",
-    "`AccessControl.getUserRole` traps for any non-anonymous principal not registered via initialization; since `hasPermission()` calls `getUserRole()`, permission-gated methods can trap if `_initializeAccessControlWithSecret` was not successfully called.",
-    "`_initializeAccessControlWithSecret` traps if the `CAFFEINE_ADMIN_TOKEN` environment variable is not set; because the frontend calls this during authenticated actor creation, auth flows can break entirely when the canister is misconfigured.",
-    "`OnboardingResultContext` exists and `SweetSummit` reads from it, but `Onboarding.tsx` never calls `setOnboardingResult`, so navigating to `/sweet-summit` typically shows the empty-state screen.",
-    "The AI client reads `VITE_AI_API_KEY` in the browser; enabling it exposes the key to end users unless moved behind a trusted backend/proxy.",
-    "Modal/carousel UIs (Landing and Onboarding step 4) do not implement full dialog accessibility (e.g., focus trapping, `role=\"dialog\"`, `aria-modal`).",
-    "`WeeklyMountain.tsx` imports `Mountain` from `lucide-react` but does not use it (minor lint issue).",
-    "There is an empty/redundant `frontend/index.css` alongside `frontend/src/index.css`, which can confuse contributors about the single source of truth for global styles.",
-    "Chocolate Fridge period toggle buttons (e.g., \"All Time\") can be cut off due to full-height/no-scroll layout; needs reduced padding/more compact toggle row."
+    "Login and signup flows still hang (non-terminal auth state) after latest deployment; likely related to RBAC bootstrap/init or stalled Internet Identity popup handling and needs investigation.",
+    "In the current \"drafts\" build, Internet Identity popup/chooser never opens for login/signup (hang occurs before II window appears), suggesting a user-gesture/popup-blocking issue or stalled auth initiation.",
+    "In drafts build on Chrome mobile: tapping Login/Sign Up shows button loading spinner but Internet Identity popup/chooser never opens; no popup-blocked indicator is shown.",
+    "AI proxy hosted on Render free tier may be asleep/cold-starting, causing long waits or 'Unable to reach AI' errors; current messaging is too minimal and should better guide users (wake-up delay + retry).",
+    "Internet Identity login/signup can take an excessively long time when the popup/chooser fails to open; needs faster timeout/failover so the UI returns quickly to a retryable state.",
+    "Weekly Mountain dashboard shows sample/placeholder progress for first-time users after onboarding; should start at 0% progress.",
+    "Daily SweetSteps can crash when navigating from Weekly Mountain (\"Cannot read properties of undefined (reading 'map')\"); tasks array is undefined and must be guarded/defaulted.",
+    "Main /signup flow on mobile can stall ~300s after Internet Identity authorization while stuck on “Validating identity…” (auth status banner does not advance), then eventually proceeds to Onboarding.",
+    "Onboarding flow can crash after answering questions with Minified React error #31 (attempting to render an object with keys {deadline, name, progress, reason}) during onboarding/plan preview rendering."
   ],
-  "isFixRequest": false,
+  "isFixRequest": true,
   "gameProjectType": "none",
   "projectName": "SweetSteps",
   "clarification_mode": "pro",

@@ -13,14 +13,39 @@ export const UserRole = IDL.Variant({
   'user' : IDL.Null,
   'guest' : IDL.Null,
 });
+export const Time = IDL.Int;
+export const User = IDL.Record({
+  'createdAt' : Time,
+  'onboardingCompleted' : IDL.Bool,
+});
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  'alternateSignup' : IDL.Func(
+      [IDL.Text, IDL.Text],
+      [IDL.Record({ 'message' : IDL.Text, 'success' : IDL.Bool })],
+      [],
+    ),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'bootstrapRBAC' : IDL.Func([], [], []),
   'canAccessOnboarding' : IDL.Func([], [IDL.Bool], ['query']),
   'completeOnboarding' : IDL.Func([], [], []),
+  'getCallerUserProfile' : IDL.Func([], [IDL.Opt(User)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+  'getRBACStatus' : IDL.Func(
+      [],
+      [IDL.Record({ 'bootstrapped' : IDL.Bool })],
+      ['query'],
+    ),
+  'getUserProfile' : IDL.Func([IDL.Principal], [IDL.Opt(User)], ['query']),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'isRBACActive' : IDL.Func([], [IDL.Bool], ['query']),
+  'saveCallerUserProfile' : IDL.Func([User], [], []),
+  'warmup' : IDL.Func(
+      [],
+      [IDL.Record({ 'time' : Time, 'caller' : IDL.Principal })],
+      [],
+    ),
 });
 
 export const idlInitArgs = [];
@@ -31,14 +56,39 @@ export const idlFactory = ({ IDL }) => {
     'user' : IDL.Null,
     'guest' : IDL.Null,
   });
+  const Time = IDL.Int;
+  const User = IDL.Record({
+    'createdAt' : Time,
+    'onboardingCompleted' : IDL.Bool,
+  });
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    'alternateSignup' : IDL.Func(
+        [IDL.Text, IDL.Text],
+        [IDL.Record({ 'message' : IDL.Text, 'success' : IDL.Bool })],
+        [],
+      ),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'bootstrapRBAC' : IDL.Func([], [], []),
     'canAccessOnboarding' : IDL.Func([], [IDL.Bool], ['query']),
     'completeOnboarding' : IDL.Func([], [], []),
+    'getCallerUserProfile' : IDL.Func([], [IDL.Opt(User)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+    'getRBACStatus' : IDL.Func(
+        [],
+        [IDL.Record({ 'bootstrapped' : IDL.Bool })],
+        ['query'],
+      ),
+    'getUserProfile' : IDL.Func([IDL.Principal], [IDL.Opt(User)], ['query']),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'isRBACActive' : IDL.Func([], [IDL.Bool], ['query']),
+    'saveCallerUserProfile' : IDL.Func([User], [], []),
+    'warmup' : IDL.Func(
+        [],
+        [IDL.Record({ 'time' : Time, 'caller' : IDL.Principal })],
+        [],
+      ),
   });
 };
 

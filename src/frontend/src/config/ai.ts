@@ -1,3 +1,7 @@
+// LEGACY FILE - NO LONGER USED
+// AI configuration is now handled by the external proxy API
+// No API keys or Groq URLs are needed in the frontend
+
 interface AIConfig {
   url: string;
   apiKey: string | null;
@@ -5,12 +9,10 @@ interface AIConfig {
 }
 
 export function getAIConfig(): AIConfig {
-  const url = import.meta.env.VITE_AI_ENDPOINT_URL || 'https://api.groq.com/openai/v1/chat/completions';
-  const apiKey = import.meta.env.VITE_AI_API_KEY || null;
-
+  console.warn('getAIConfig is deprecated. Use aiProxyClient.ts instead.');
   return {
-    url,
-    apiKey,
-    isConfigured: !!apiKey
+    url: '',
+    apiKey: null,
+    isConfigured: false,
   };
 }

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { X, ChevronLeft, ChevronRight, Mountain } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Mountain, TestTube2 } from 'lucide-react';
 
 export default function Landing() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -109,34 +109,23 @@ export default function Landing() {
             
             <Button 
               size="lg" 
-              variant="secondary" 
-              className="w-full text-base font-semibold h-12 rounded-xl bg-secondary hover:bg-secondary/90 text-secondary-foreground"
+              className="w-full text-base font-semibold h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground"
               onClick={() => setIsModalOpen(true)}
             >
               Why SweetSteps?
             </Button>
 
-            {/* Temporary Test Links */}
-            <div className="pt-4 border-t border-border/50 mt-2 space-y-2">
-              <Link to="/daily">
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
-                  className="w-full text-xs font-medium h-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                >
-                  🧪 Test: View Daily Page (Temporary)
-                </Button>
-              </Link>
-              <Link to="/fridge">
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
-                  className="w-full text-xs font-medium h-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                >
-                  🧪 Test: View Chocolate Fridge (Temporary)
-                </Button>
-              </Link>
-            </div>
+            {/* Test Signup Button */}
+            <Link to="/signup-test">
+              <Button 
+                size="lg" 
+                variant="outline"
+                className="w-full text-base font-semibold h-12 rounded-xl border-dashed border-2 border-accent bg-accent/5 hover:bg-accent/10 text-accent-foreground"
+              >
+                <TestTube2 className="w-5 h-5 mr-2" />
+                Test Signup Page
+              </Button>
+            </Link>
           </div>
         </div>
       </main>

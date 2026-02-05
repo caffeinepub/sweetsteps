@@ -1,38 +1,67 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-04T12:18:04.161Z",
-  "summary": "Daily page header was updated to \"Today's SweetSteps\" and now displays today’s date. The tasks container card/heading appears removed in favor of a simple list wrapper. Task rows are now clickable and open TaskModal with derived title/description and minutes, but the completion flow does not appear to execute/close as required, and additional unrequested UI (footer) was added.",
+  "generatedAt": "2026-02-05T04:51:57.484Z",
+  "summary": "REQ-5/REQ-8 appear addressed by adding explicit post-auth phase timeouts with fail-fast error states in Signup/Login (via new usePostAuthTimeout). REQ-6 appears addressed by adding safe AI value rendering (toSafeString) and stricter AI response validation to prevent React object-render crashes. REQ-7 (force Internet Identity chooser/account selection on every Login click) does not appear implemented; the diff summary explicitly notes the II login flow remains standard without a forced account selection parameter. Several unrelated UI/theme/routing additions were introduced that were not requested.",
   "missing_requirements": [
     {
       "id": "REQ-7",
-      "requirement": "Completing the task via the modal should execute the existing onComplete callback flow (and then close the modal).",
-      "reason": "The provided onComplete handler only logs to the console and does not close the modal or demonstrate integration with any existing completion flow/callback beyond the local console.log.",
+      "requirement": "Update Login behavior so the Internet Identity account chooser is shown on every explicit user Login click (force account selection rather than silently reusing an existing Internet Identity session), including retryable handling if popup cannot open.",
+      "reason": "The diff summary explicitly states Login/Signup use the standard II login flow and do not include a forced account selection parameter/behavior, so users may still silently reuse an existing II session instead of seeing the chooser every time.",
       "evidence": [
-        "frontend/src/pages/Daily.tsx (handleTaskComplete only console.log; passed as onComplete)"
+        "frontend-file-summaries.txt",
+        "frontend/src/pages/Login.tsx",
+        "frontend/src/pages/Signup.tsx"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Added a new footer section with © 2026 and an external link to caffeine.ai on the Daily page.",
-      "reason": "The BuildRequest only requested header changes, task container styling changes, and wiring task taps to open TaskModal; it did not request adding a footer or external link.",
+      "description": "Added a new /signup-test route and a Landing page CTA/button linking to it.",
+      "reason": "Not requested by any requirement; non-goals also discourage unrelated page changes beyond what’s needed for auth/onboarding fixes.",
       "evidence": [
-        "frontend/src/pages/Daily.tsx (Footer section added)"
+        "frontend-file-summaries.txt"
       ]
     },
     {
-      "description": "Introduced placeholder task data and a new local DailyStep/DailyData data shape in Daily.tsx.",
-      "reason": "The BuildRequest did not request changing the data source/model for daily tasks or introducing placeholder data; it focused on UI wiring/styling and modal behavior.",
+      "description": "Global styling/theme changes: chocolate-inspired OKLCH tokens, global typography rules, and Tailwind font/color configuration updates; Google Fonts added to index.html.",
+      "reason": "Not requested for fixing auth stalls, onboarding crash, or forcing II chooser; constitutes a redesign-level change outside stated scope.",
       "evidence": [
-        "frontend/src/pages/Daily.tsx (type DailyStep/DailyData and placeholderData)"
+        "frontend-file-summaries.txt"
+      ]
+    },
+    {
+      "description": "Added SPA 404 fallback page redirecting deep links to index.html.",
+      "reason": "Not requested in requirements and unrelated to specified auth/onboarding issues.",
+      "evidence": [
+        "frontend-file-summaries.txt"
+      ]
+    },
+    {
+      "description": "Removed a 'password auth provider' from RootLayout (leaving Internet Identity callback handler).",
+      "reason": "Not requested; requirements only state not to add new providers beyond II, not to remove existing providers/components.",
+      "evidence": [
+        "frontend-file-summaries.txt"
+      ]
+    },
+    {
+      "description": "Deprecated/disabled legacy AI configuration/client files and added/kept local onboarding placeholder generator behavior (per summaries).",
+      "reason": "Not requested by REQ-6 (which focuses on crash-proof rendering and graceful handling of unexpected AI shapes).",
+      "evidence": [
+        "frontend-file-summaries.txt"
       ]
     }
   ],
-  "confidence": 0.74,
+  "confidence": 0.66,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/pages/Daily.tsx",
+    "frontend/src/hooks/usePostAuthTimeout.ts",
+    "frontend/src/lib/aiProxyClient.ts",
+    "frontend/src/pages/Login.tsx",
+    "frontend/src/pages/Onboarding.tsx",
+    "frontend/src/pages/Signup.tsx",
+    "frontend/src/pages/SweetSummit.tsx",
+    "frontend/src/utils/safeRender.ts",
     "project_state.json"
   ]
 }

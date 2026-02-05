@@ -2,33 +2,29 @@ import { useNavigate } from '@tanstack/react-router';
 import { useOnboardingResult } from '../contexts/OnboardingResultContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Mountain, Target, Calendar, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ChevronRight, Mountain, Target, Footprints } from 'lucide-react';
+import { toSafeString } from '../utils/safeRender';
 
 export default function SweetSummit() {
-  const { onboardingResult } = useOnboardingResult();
   const navigate = useNavigate();
+  const { onboardingResult } = useOnboardingResult();
 
-  // Development-friendly empty state
   if (!onboardingResult) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6 py-16">
-        <div className="w-full max-w-2xl mx-auto">
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              No onboarding data found. Please complete the onboarding flow first.
-            </AlertDescription>
-          </Alert>
-          <div className="mt-4 text-center">
-            <Button
-              onClick={() => navigate({ to: '/onboarding' })}
-              className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground"
-            >
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle>No Onboarding Data</CardTitle>
+            <CardDescription>
+              It looks like you haven't completed onboarding yet.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => navigate({ to: '/onboarding' })} className="w-full">
               Go to Onboarding
             </Button>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -36,105 +32,84 @@ export default function SweetSummit() {
   const { aiResponse } = onboardingResult;
 
   return (
-    <div className="min-h-screen bg-background text-foreground px-6 py-16">
-      <div className="w-full max-w-4xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="text-center space-y-4">
-          <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center border border-border">
-              <Mountain className="w-10 h-10 text-foreground" />
-            </div>
-          </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground">
-            Welcome to Your Sweet Summit! 🎉
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            Here's your personalized plan to reach your goal
-          </p>
-        </div>
-
-        {/* Big Goal */}
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <Target className="w-6 h-6 text-primary" />
-              <CardTitle className="text-2xl text-foreground">Your Big Goal</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-lg text-foreground">{aiResponse.bigGoal}</p>
-          </CardContent>
-        </Card>
-
-        {/* Sample Weekly Mountain */}
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <Mountain className="w-6 h-6 text-primary" />
-              <CardTitle className="text-2xl text-foreground">Sample Weekly Mountain</CardTitle>
-            </div>
-            <CardDescription className="text-muted-foreground">
-              Here's an example of what your weekly focus could look like
+    <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6 py-16">
+      <div className="w-full max-w-2xl mx-auto space-y-6">
+        <Card className="bg-transparent border-0 shadow-none">
+          <CardHeader className="space-y-3 text-center">
+            <CardTitle className="text-3xl font-bold text-card-foreground">
+              Sweet Summit
+            </CardTitle>
+            <CardDescription className="text-muted-foreground text-base">
+              Your personalized plan is ready!
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">
-                {aiResponse.weeklyMountain.name}
-              </h3>
-              <div className="space-y-2">
-                <div className="flex items-start gap-2">
-                  <Target className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
+          <CardContent className="space-y-6">
+            {/* Big Goal */}
+            <Card className="bg-background border-border">
+              <CardContent className="p-6 space-y-4 flex flex-col items-center text-center">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center border border-border">
+                  <Target className="w-10 h-10 text-foreground" />
+                </div>
+                <h3 className="text-2xl font-bold text-foreground">Your Big Goal</h3>
+                <p className="text-muted-foreground leading-relaxed text-base whitespace-pre-wrap">
+                  {toSafeString(aiResponse.bigGoal)}
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Weekly Mountain */}
+            <Card className="bg-background border-border">
+              <CardContent className="p-6 space-y-4 flex flex-col items-center text-center">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent/20 to-secondary/20 flex items-center justify-center border border-border">
+                  <Mountain className="w-10 h-10 text-foreground" />
+                </div>
+                <h3 className="text-2xl font-bold text-foreground">Your First Weekly Mountain</h3>
+                <div className="space-y-3 text-left w-full max-w-md">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Weekly Target</p>
-                    <p className="text-base text-foreground">{aiResponse.weeklyMountain.weeklyTarget}</p>
+                    <h4 className="text-lg font-semibold text-foreground mb-1">
+                      {toSafeString(aiResponse.weeklyMountain.name)}
+                    </h4>
+                    <p className="text-muted-foreground text-sm">Weekly Target</p>
+                    <p className="text-foreground whitespace-pre-wrap">
+                      {toSafeString(aiResponse.weeklyMountain.weeklyTarget)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-sm">Note</p>
+                    <p className="text-foreground whitespace-pre-wrap">
+                      {toSafeString(aiResponse.weeklyMountain.note)}
+                    </p>
                   </div>
                 </div>
-                {aiResponse.weeklyMountain.note && (
-                  <div className="flex items-start gap-2">
-                    <Calendar className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Note</p>
-                      <p className="text-base text-foreground">{aiResponse.weeklyMountain.note}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
+              </CardContent>
+            </Card>
+
+            {/* Daily Step */}
+            <Card className="bg-background border-border">
+              <CardContent className="p-6 space-y-4 flex flex-col items-center text-center">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-secondary/20 to-primary/20 flex items-center justify-center border border-border">
+                  <Footprints className="w-10 h-10 text-foreground" />
+                </div>
+                <h3 className="text-2xl font-bold text-foreground">Sample Daily SweetStep</h3>
+                <p className="text-muted-foreground leading-relaxed text-base whitespace-pre-wrap">
+                  {toSafeString(aiResponse.dailyStep)}
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Start Journey Button */}
+            <div className="flex justify-center pt-4">
+              <Button
+                size="lg"
+                onClick={() => navigate({ to: '/weekly-mountain' })}
+                className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground px-8"
+              >
+                Start Your Journey
+                <ChevronRight className="w-5 h-5 ml-2" />
+              </Button>
             </div>
           </CardContent>
         </Card>
-
-        {/* Sample Daily Step */}
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <CheckCircle2 className="w-6 h-6 text-primary" />
-              <CardTitle className="text-2xl text-foreground">Sample Daily SweetStep</CardTitle>
-            </div>
-            <CardDescription className="text-muted-foreground">
-              A small, actionable step to keep you moving forward
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-sm font-semibold text-primary">1</span>
-              </div>
-              <p className="text-base text-foreground">{aiResponse.dailyStep}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Action Button - Placeholder for future */}
-        <div className="text-center pt-4">
-          <Button
-            size="lg"
-            className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground"
-            onClick={() => navigate({ to: '/' })}
-          >
-            Continue to Dashboard
-          </Button>
-        </div>
       </div>
     </div>
   );

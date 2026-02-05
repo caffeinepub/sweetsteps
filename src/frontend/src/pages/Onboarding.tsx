@@ -9,24 +9,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, AlertCircle, ChevronRight, ChevronLeft, Mountain, Target, Footprints } from 'lucide-react';
-import { generatePlaceholderPlan } from '../lib/onboardingPlaceholder';
-
-interface WeeklyMountain {
-  name: string;
-  weeklyTarget: string;
-  note: string;
-}
-
-interface PlanData {
-  bigGoal: string;
-  sampleWeeklyMountain: WeeklyMountain;
-  sampleDailyStep: string;
-}
+import { generateOnboardingPlan, type OnboardingPlanResponse } from '../lib/aiProxyClient';
+import { useOnboardingResult } from '../contexts/OnboardingResultContext';
+import { toSafeString } from '../utils/safeRender';
 
 export default function Onboarding() {
   const { identity } = useInternetIdentity();
   const { actor, isFetching: actorFetching } = useActor();
   const navigate = useNavigate();
+  const { setOnboardingResult } = useOnboardingResult();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isCheckingAccess, setIsCheckingAccess] = useState(true);
@@ -35,7 +26,7 @@ export default function Onboarding() {
   const [timeframe, setTimeframe] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [planData, setPlanData] = useState<PlanData | null>(null);
+  const [planData, setPlanData] = useState<OnboardingPlanResponse | null>(null);
   const [carouselSlide, setCarouselSlide] = useState(0);
 
   // Check if user can access onboarding
@@ -92,7 +83,7 @@ export default function Onboarding() {
   };
 
   const handleBack = () => {
-    if (currentStep > 1) {
+    if (currentStep > 1 && !isSubmitting) {
       setCurrentStep(currentStep - 1);
       setError(null);
     }
@@ -108,9 +99,20 @@ export default function Onboarding() {
     setError(null);
 
     try {
-      // Generate plan data locally using placeholder function
-      const generatedPlan = generatePlaceholderPlan(goal, currentStanding, timeframe);
-      setPlanData(generatedPlan);
+      // Call the external AI proxy API with validation
+      const aiResponse = await generateOnboardingPlan(goal, currentStanding, timeframe);
+      
+      setPlanData(aiResponse);
+
+      // Store in context for Sweet Summit and other pages
+      setOnboardingResult({
+        answers: {
+          vagueGoal: goal,
+          currentProgress: currentStanding,
+          timeLimit: timeframe,
+        },
+        aiResponse,
+      });
 
       // Mark onboarding as completed in backend
       await actor.completeOnboarding();
@@ -120,6 +122,7 @@ export default function Onboarding() {
       setCarouselSlide(0);
     } catch (err: any) {
       console.error('Error submitting onboarding:', err);
+      // Surface the error message from the AI proxy client
       setError(err.message || 'Unable to process your onboarding. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -161,22 +164,24 @@ export default function Onboarding() {
     {
       icon: Target,
       title: 'Your Big Goal',
-      content: planData.bigGoal,
+      content: toSafeString(planData.bigGoal),
       color: 'from-primary/20 to-accent/20'
     },
     {
       icon: Mountain,
-      title: 'Sample Weekly Mountain',
+      title: 'Your First Weekly Mountain',
       content: (
         <div className="space-y-3 text-left">
           <div>
-            <h4 className="text-lg font-semibold text-foreground mb-1">{planData.sampleWeeklyMountain.name}</h4>
+            <h4 className="text-lg font-semibold text-foreground mb-1">
+              {toSafeString(planData.weeklyMountain.name)}
+            </h4>
             <p className="text-muted-foreground text-sm">Weekly Target</p>
-            <p className="text-foreground">{planData.sampleWeeklyMountain.weeklyTarget}</p>
+            <p className="text-foreground">{toSafeString(planData.weeklyMountain.weeklyTarget)}</p>
           </div>
           <div>
             <p className="text-muted-foreground text-sm">Note</p>
-            <p className="text-foreground">{planData.sampleWeeklyMountain.note}</p>
+            <p className="text-foreground">{toSafeString(planData.weeklyMountain.note)}</p>
           </div>
         </div>
       ),
@@ -185,7 +190,7 @@ export default function Onboarding() {
     {
       icon: Footprints,
       title: 'Sample Daily SweetStep',
-      content: planData.sampleDailyStep,
+      content: toSafeString(planData.dailyStep),
       color: 'from-secondary/20 to-primary/20'
     }
   ] : [];
@@ -326,7 +331,7 @@ export default function Onboarding() {
                     {isSubmitting ? (
                       <>
                         <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                        Processing...
+                        Generating your plan...
                       </>
                     ) : (
                       'Complete Setup'
@@ -362,7 +367,7 @@ export default function Onboarding() {
                             <h3 className="text-2xl md:text-3xl font-bold text-foreground">{slide.title}</h3>
                             <div className="text-muted-foreground leading-relaxed text-base md:text-lg max-w-md">
                               {typeof slide.content === 'string' ? (
-                                <p>{slide.content}</p>
+                                <p className="whitespace-pre-wrap">{slide.content}</p>
                               ) : (
                                 slide.content
                               )}

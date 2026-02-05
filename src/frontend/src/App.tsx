@@ -8,6 +8,7 @@ import SweetSummit from './pages/SweetSummit';
 import WeeklyMountain from './pages/WeeklyMountain';
 import Daily from './pages/Daily';
 import Fridge from './pages/Fridge';
+import SignupTest from './pages/SignupTest';
 
 const rootRoute = createRootRoute({
   component: RootLayout
@@ -29,6 +30,12 @@ const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/login',
   component: Login
+});
+
+const signupTestRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/signup-test',
+  component: SignupTest
 });
 
 const onboardingRoute = createRoute({
@@ -65,6 +72,7 @@ const routeTree = rootRoute.addChildren([
   indexRoute, 
   signupRoute, 
   loginRoute, 
+  signupTestRoute,
   onboardingRoute, 
   sweetSummitRoute,
   weeklyMountainRoute,

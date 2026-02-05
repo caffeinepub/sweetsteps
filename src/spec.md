@@ -1,11 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Update the Daily SweetSteps page UI and interactions so the header shows “Today's SweetSteps” with today’s date, the task list container is simplified, and tapping a task opens the existing TaskModal with task-specific details.
+**Goal:** Eliminate long post-Internet-Identity “Validating…” stalls, prevent the onboarding React crash, and ensure each explicit Login click always prompts the Internet Identity account chooser.
 
 **Planned changes:**
-- Change the /daily page header title to exactly “Today's SweetSteps” and add today’s date in a readable English format; remove any “Daily SweetSteps” header text.
-- Remove the in-container heading “Today's SweetSteps” from the tasks list wrapper, and remove the wrapper’s border and background while keeping individual task row styling intact.
-- Make each task row clickable/tappable to open the existing TaskModal, passing the selected task data to populate the modal title, a non-empty description (derived from task text if needed), and initial timer minutes from the task’s time value; ensure close/backdrop closes and completion uses the existing onComplete flow then closes.
+- Add explicit post-Internet-Identity step handling in Signup/Login so the UI reflects the actual blocking step (e.g., backend/actor readiness, account/onboarding checks) instead of staying on a generic “Validating…” state.
+- Add timeouts/guards for post-II steps to prevent multi-minute hangs; transition to a clear, retryable error state with actionable guidance when steps exceed the timeout.
+- Ensure Retry reliably clears auth UI state and re-runs the auth pipeline without requiring a full page refresh.
+- Update Login flow to force Internet Identity account selection on every user-initiated Login click (avoid silently reusing an existing II session and avoid “Already Logged In” dead-ends); handle popup-blocked scenarios by returning quickly to a retryable state with guidance.
+- Fix onboarding plan preview rendering to never attempt to directly render objects/arrays (e.g., {deadline, name, progress, reason}); safely format or fallback-render unexpected AI response shapes and show user-friendly errors instead of crashing.
 
-**User-visible outcome:** On the Daily page, users see “Today's SweetSteps” with today’s date, a cleaner task list container, and can tap any task to open the TaskModal pre-filled for that task and complete it through the existing flow.
+**User-visible outcome:** After authorizing with Internet Identity, users are no longer stuck on “Validating identity…” for minutes; they either proceed promptly or see a clear error with Retry. Onboarding completes without a React crash, and clicking Login always opens the Internet Identity chooser to allow account switching.

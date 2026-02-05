@@ -1,57 +1,128 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Daily SweetSteps: header/date update, task container styling, and TaskModal open-on-tap",
+  "title": "Stabilize Internet Identity auth flow (timeouts, step-accurate status) and harden onboarding plan rendering",
   "requirements": [
     {
       "id": "REQ-5",
-      "summary": "Update /daily header title to \"Today's SweetSteps\" and display today's date in English; remove \"Daily SweetSteps\" header text.",
+      "summary": "Prevent /signup from stalling for minutes after Internet Identity authorization by adding explicit post-II timeouts, step-accurate progress, and a retryable error state.",
       "acceptanceCriteria": [
-        "On /daily, the page header title reads exactly: \"Today's SweetSteps\"",
-        "The header also shows today's date (e.g., a readable English format such as \"February 4, 2026\")",
-        "The header no longer displays \"Daily SweetSteps\" anywhere"
+        "On mobile and desktop, after completing Internet Identity authorization, the Signup page does not remain stuck showing only “Validating identity…” for minutes.",
+        "If backend actor creation / onboarding access checks do not complete within a reasonable timeout, the page transitions to an error state with a working Retry action (no indefinite loading).",
+        "The AuthStatusBanner step label updates to reflect the actual blocking step (e.g., connecting to backend / checking account status) instead of remaining on a generic “Validating…” label for the entire wait."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/Daily.tsx",
+          "path": "frontend/src/pages/Signup.tsx",
           "operation": "modify",
-          "description": "Replace the header h1 text with exactly \"Today's SweetSteps\" and add a date line derived at render time using an English locale date format; ensure the old \"Daily SweetSteps\" header text is removed from the page."
+          "description": "Add explicit post-II guards/timeouts for the validating→actor-ready→navigation pipeline so the UI fails fast into a retryable error state instead of stalling; update diagnostics step transitions so AuthStatusBanner reflects the actual blocking step; ensure Retry fully resets attempt state and reruns the pipeline. Use the existing authorization component-backed auth flow patterns already present in the app; verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useActor.ts",
+          "operation": "modify",
+          "description": "Expose actor creation readiness more explicitly to the UI (e.g., stable 'isFetching' semantics and/or a derived 'isReady' flag) so /signup can reliably detect 'actor ready' vs 'still connecting' and trigger post-auth timeout handling without multi-minute waits."
+        },
+        {
+          "path": "frontend/src/hooks/useAuthFlowDiagnostics.ts",
+          "operation": "modify",
+          "description": "Add/adjust supported auth steps (or step label mapping usage) so the flow can represent 'connecting to backend' / 'actor readiness' distinctly from 'identity validation', enabling accurate progress messaging in AuthStatusBanner."
         }
       ]
     },
     {
       "id": "REQ-6",
-      "summary": "Remove the in-card heading from the tasks container and make the tasks list wrapper transparent (no border/background) while keeping per-row styling intact.",
+      "summary": "Fix the onboarding plan preview React crash by safely rendering AI response fields and gracefully handling unexpected response shapes with user-friendly messaging.",
       "acceptanceCriteria": [
-        "The tasks list wrapper no longer has a visible border",
-        "The tasks list wrapper no longer has a background fill (appears transparent against the page background)",
-        "The in-wrapper heading \"Today's SweetSteps\" is removed",
-        "Each task row still renders with its existing row-level styling (border/background/hover) unless explicitly changed by these requirements"
+        "Completing onboarding and reaching the Step 4 “Sweet Summit” carousel does not crash the React app.",
+        "If any AI response fields used in Onboarding plan preview are objects/arrays instead of strings, the UI renders a safe fallback (e.g., formatted text) and continues functioning.",
+        "Errors from invalid/unexpected AI response shapes are surfaced as user-friendly messages instead of a hard React crash."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/Daily.tsx",
+          "path": "frontend/src/lib/aiProxyClient.ts",
           "operation": "modify",
-          "description": "Remove the CardHeader/CardTitle section currently rendering \"Today's SweetSteps\" inside the tasks container and adjust the tasks list wrapper styling so it has no border and no background (transparent), without changing the existing task row-level classes."
+          "description": "Harden AI response handling for onboarding-plan by validating/coercing returned fields into render-safe primitives (strings) and throwing a user-friendly error when the response is unusable, so consumers never try to render raw objects/arrays."
+        },
+        {
+          "path": "frontend/src/pages/Onboarding.tsx",
+          "operation": "modify",
+          "description": "Update Sweet Summit (Step 4) carousel rendering to use a safe text/rendering helper for any AI-derived fields (bigGoal, weeklyMountain.name/weeklyTarget/note, dailyStep); if normalization detects unexpected shapes, show a non-crashing, user-friendly error message and allow retry/redo rather than rendering an object."
+        },
+        {
+          "path": "frontend/src/pages/SweetSummit.tsx",
+          "operation": "modify",
+          "description": "Add defensive rendering for onboardingResult.aiResponse fields (render-safe coercion and/or fallback UI) so unexpected AI response shapes cannot crash the page."
+        },
+        {
+          "path": "frontend/src/contexts/OnboardingResultContext.tsx",
+          "operation": "modify",
+          "description": "Relax/align stored onboarding result typing to support safe runtime validation (e.g., store a normalized, render-safe shape and optionally retain a raw payload separately), ensuring future renders cannot directly attempt to render non-React objects."
+        },
+        {
+          "path": "frontend/src/utils/safeRender.ts",
+          "operation": "create",
+          "description": "Add small utilities to convert unknown AI-provided values into safe strings/ReactNodes (e.g., string passthrough, array join, object pretty-print) and to produce consistent user-facing fallback text in English."
         }
       ]
     },
     {
       "id": "REQ-7",
-      "summary": "Open TaskModal when a task row is clicked and pass selected task data (title, derived description, initial minutes) into the modal; ensure close and completion behaviors match existing modal flow.",
+      "summary": "Force the Internet Identity account chooser on every explicit Login click (no silent session reuse / dead-end 'Already Logged In' screen), with quick recovery guidance if popups are blocked.",
       "acceptanceCriteria": [
-        "Clicking any task row on /daily opens TaskModal",
-        "TaskModal header title matches the clicked task's task text",
-        "TaskModal shows a non-empty description for the selected task (derived from the task text if necessary)",
-        "TaskModal initial timer minutes reflect the selected task's time (minutes) value",
-        "Clicking the close control or backdrop closes TaskModal and returns to the list",
-        "Selecting \"Yes\" after the timer finishes triggers the modal onComplete flow and closes the modal"
+        "Clicking the Login button always triggers an Internet Identity chooser/login window, even if the user previously authenticated in the same browser.",
+        "The app does not show an 'Already Logged In' dead-end screen that prevents account switching; users can always initiate account selection from the Login page.",
+        "If the chooser/popup cannot open (blocked), the UI returns quickly to a retryable state with actionable guidance."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/Daily.tsx",
+          "path": "frontend/src/hooks/useInternetIdentity.ts",
           "operation": "modify",
-          "description": "Wire task-row click/tap to set a selected-task state and open the existing frontend/src/components/TaskModal.tsx. Pass the clicked task text as the modal title, derive a non-empty description from the task text when no description exists in data, and pass the task time value as the modal’s estimated minutes. Provide an onClose handler that returns to the list and an onComplete handler that executes the current completion flow for Daily (no new persistence) and then closes the modal."
+          "description": "Add a user-gesture-safe 'force account selection' login mode (e.g., optional parameter) that avoids the current 'User is already authenticated' early-exit and triggers a fresh II login attempt from a click; keep logout/clear behavior compatible with immediate re-login. This is part of the existing authorization component-backed auth flow; verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/Login.tsx",
+          "operation": "modify",
+          "description": "Remove/replace the 'Already Logged In' dead-end UI and ensure the Login button always initiates the forced account chooser flow (desktop + mobile), while preserving existing popup-block detection and showing retryable guidance via existing auth panels. Use the existing authorization component-backed auth flow patterns already present in the app; verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useMobileInternetIdentityLoginPatched.ts",
+          "operation": "modify",
+          "description": "Ensure the mobile-safe login path supports the same 'force chooser' semantics as desktop (e.g., by avoiding reuse checks and ensuring a fresh II interaction on each click) while preserving user-gesture constraints."
+        }
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "summary": "Ensure Signup + Login auth UI state machines cannot remain non-terminal after II authorization by adding explicit post-auth timeouts/guards and reliable Retry that re-runs the pipeline without refresh.",
+      "acceptanceCriteria": [
+        "After II authorization succeeds, the app either routes to the correct next page promptly or shows an error state within the configured post-auth timeout (no ~300s silent wait).",
+        "Retry clears the stuck state and can successfully re-run the auth pipeline without requiring a full page refresh."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/Signup.tsx",
+          "operation": "modify",
+          "description": "Add post-II timeout/guard coverage for all blocking steps after authorization (identity validation, actor readiness, navigation), and ensure a terminal error + Retry path is always reached if those steps exceed configured thresholds (no indefinite waiting). Use the existing authorization component-backed auth flow patterns already present in the app; verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/Login.tsx",
+          "operation": "modify",
+          "description": "Add post-II timeout/guard coverage for all blocking steps after authorization (identity validation, actor readiness, onboarding access check, navigation), and ensure a terminal error + Retry path is always reached if those steps exceed configured thresholds (no indefinite waiting). Use the existing authorization component-backed auth flow patterns already present in the app; verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useStalledAuthDetection.ts",
+          "operation": "modify",
+          "description": "Extend stall detection to cover post-II steps beyond 'logging-in' (e.g., actor readiness and onboarding check) so the UI can reliably detect and surface stalls after authorization rather than only during popup/login, with configurable timeouts per step."
+        },
+        {
+          "path": "frontend/src/components/auth/AuthStatusBanner.tsx",
+          "operation": "modify",
+          "description": "Ensure banner messaging accurately reflects the current blocking step and clearly indicates when a post-auth timeout occurs (with Retry available), using English user-facing text. Compose shadcn-ui components without modifying any files under frontend/src/components/ui; verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/usePostAuthTimeout.ts",
+          "operation": "create",
+          "description": "Create a focused hook that starts a timer for designated post-II phases (validation/actor-ready/onboarding-check) and returns a terminal timeout state plus reset/retry helpers, enabling consistent fail-fast behavior across Signup and Login."
         }
       ]
     }

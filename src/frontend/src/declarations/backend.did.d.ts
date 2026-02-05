@@ -10,16 +10,35 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export type Time = bigint;
+export interface User { 'createdAt' : Time, 'onboardingCompleted' : boolean }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'alternateSignup' : ActorMethod<
+    [string, string],
+    { 'message' : string, 'success' : boolean }
+  >,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'bootstrapRBAC' : ActorMethod<[], undefined>,
   'canAccessOnboarding' : ActorMethod<[], boolean>,
   'completeOnboarding' : ActorMethod<[], undefined>,
+  'getCallerUserProfile' : ActorMethod<[], [] | [User]>,
+  /**
+   * / Lightweight update call that allows client to bring canister up to speed
+   */
   'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getRBACStatus' : ActorMethod<[], { 'bootstrapped' : boolean }>,
+  'getUserProfile' : ActorMethod<[Principal], [] | [User]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
+  'isRBACActive' : ActorMethod<[], boolean>,
+  'saveCallerUserProfile' : ActorMethod<[User], undefined>,
+  /**
+   * / Lightweight update call that allows client to bring canister up to speed
+   */
+  'warmup' : ActorMethod<[], { 'time' : Time, 'caller' : Principal }>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];
