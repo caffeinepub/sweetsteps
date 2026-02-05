@@ -1,90 +1,43 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-05T04:51:57.539Z",
+  "generatedAt": "2026-02-05T10:10:01.772Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
-    "implemented": 4,
+    "total": 2,
+    "implemented": 1,
     "items": [
       {
         "id": "REQ-5",
-        "summary": "Fix the main /signup flow so that after Internet Identity authorization the app does not remain on the Signup page in a “Validating identity…” state for ~300 seconds. Ensure the UI either (a) progresses through auth steps promptly (identity validation → backend actor ready → routing) or (b) fails fast into a retryable error state with clear instructions, rather than waiting minutes before redirecting to /onboarding.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/Signup.tsx",
-          "frontend/src/hooks/useActor.ts",
-          "frontend/src/hooks/useAuthFlowDiagnostics.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/Signup.tsx"
-        ]
+        "summary": "Persist backend user profile onboarding state in stable storage so `userProfiles` (including `onboardingCompleted`) survives canister upgrades/redeploys and returning authenticated users no longer see onboarding data missing due to backend state resets.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-6",
-        "summary": "Fix the Onboarding flow crash that occurs after answering onboarding questions, reported as “Minified React error #31” attempting to render an object with keys {deadline, name, progress, reason}. Ensure onboarding plan preview rendering never attempts to directly render a non-React object; it must safely render strings/ReactNodes only, and gracefully handle unexpected AI response shapes.",
+        "summary": "Remove the temporary/backup SignupTest navigation/button from the Landing page UI so users can no longer access `/signup-test` from the landing hero actions.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/lib/aiProxyClient.ts",
-          "frontend/src/pages/Onboarding.tsx",
-          "frontend/src/pages/SweetSummit.tsx",
-          "frontend/src/contexts/OnboardingResultContext.tsx",
-          "frontend/src/utils/safeRender.ts"
+          "frontend/src/pages/Landing.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/lib/aiProxyClient.ts",
-          "frontend/src/pages/Onboarding.tsx",
-          "frontend/src/pages/SweetSummit.tsx",
-          "frontend/src/utils/safeRender.ts"
-        ]
-      },
-      {
-        "id": "REQ-7",
-        "summary": "Update Login behavior so the Internet Identity account chooser is shown on every explicit user Login click (force account selection rather than silently reusing an existing Internet Identity session). This must work reliably on mobile as well as desktop.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useInternetIdentity.ts",
-          "frontend/src/pages/Login.tsx",
-          "frontend/src/hooks/useMobileInternetIdentityLoginPatched.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/Login.tsx"
-        ]
-      },
-      {
-        "id": "REQ-8",
-        "summary": "Ensure the auth UI state machine (Signup + Login) cannot remain in a non-terminal state after a completed Internet Identity authorization. Specifically, add explicit timeouts/guards for post-II steps (identity validation, actor readiness, onboarding check/navigation) so the UI either completes routing or shows an error with Retry without multi-minute waits.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/Signup.tsx",
-          "frontend/src/pages/Login.tsx",
-          "frontend/src/hooks/useStalledAuthDetection.ts",
-          "frontend/src/components/auth/AuthStatusBanner.tsx",
-          "frontend/src/hooks/usePostAuthTimeout.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/Signup.tsx",
-          "frontend/src/pages/Login.tsx",
-          "frontend/src/hooks/usePostAuthTimeout.ts"
+          "frontend/src/pages/Landing.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
+    "backend/main.mo",
+    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/hooks/usePostAuthTimeout.ts",
-    "frontend/src/lib/aiProxyClient.ts",
-    "frontend/src/pages/Login.tsx",
-    "frontend/src/pages/Onboarding.tsx",
-    "frontend/src/pages/Signup.tsx",
-    "frontend/src/pages/SweetSummit.tsx",
-    "frontend/src/utils/safeRender.ts",
+    "frontend/src/pages/Landing.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

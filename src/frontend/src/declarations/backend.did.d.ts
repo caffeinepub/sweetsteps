@@ -26,18 +26,13 @@ export interface _SERVICE {
   'canAccessOnboarding' : ActorMethod<[], boolean>,
   'completeOnboarding' : ActorMethod<[], undefined>,
   'getCallerUserProfile' : ActorMethod<[], [] | [User]>,
-  /**
-   * / Lightweight update call that allows client to bring canister up to speed
-   */
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getRBACStatus' : ActorMethod<[], { 'bootstrapped' : boolean }>,
   'getUserProfile' : ActorMethod<[Principal], [] | [User]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isRBACActive' : ActorMethod<[], boolean>,
+  'restartOnboarding' : ActorMethod<[], undefined>,
   'saveCallerUserProfile' : ActorMethod<[User], undefined>,
-  /**
-   * / Lightweight update call that allows client to bring canister up to speed
-   */
   'warmup' : ActorMethod<[], { 'time' : Time, 'caller' : Principal }>,
 }
 export declare const idlService: IDL.ServiceClass;

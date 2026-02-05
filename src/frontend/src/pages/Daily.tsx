@@ -91,7 +91,7 @@ export default function Daily() {
         <div className="w-full max-w-2xl mx-auto space-y-4">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription className="whitespace-pre-wrap">{error}</AlertDescription>
           </Alert>
           <div className="text-center">
             <Button

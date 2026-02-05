@@ -17,7 +17,7 @@ export default function Onboarding() {
   const { identity } = useInternetIdentity();
   const { actor, isFetching: actorFetching } = useActor();
   const navigate = useNavigate();
-  const { setOnboardingResult } = useOnboardingResult();
+  const { setOnboardingResult, clearOnboardingResult } = useOnboardingResult();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isCheckingAccess, setIsCheckingAccess] = useState(true);
@@ -40,6 +40,8 @@ export default function Onboarding() {
           // User has already completed onboarding, redirect to Weekly Mountain
           navigate({ to: '/weekly-mountain' });
         } else {
+          // Clear any stale persisted onboarding result when starting fresh
+          clearOnboardingResult();
           setIsCheckingAccess(false);
         }
       } catch (err) {
@@ -50,7 +52,7 @@ export default function Onboarding() {
     };
 
     checkAccess();
-  }, [identity, actor, actorFetching, navigate]);
+  }, [identity, actor, actorFetching, navigate, clearOnboardingResult]);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -104,7 +106,7 @@ export default function Onboarding() {
       
       setPlanData(aiResponse);
 
-      // Store in context for Sweet Summit and other pages
+      // Store in context (which persists to localStorage) for Sweet Summit and other pages
       setOnboardingResult({
         answers: {
           vagueGoal: goal,
@@ -307,7 +309,7 @@ export default function Onboarding() {
                 {error && (
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
+                    <AlertDescription className="whitespace-pre-wrap">{error}</AlertDescription>
                   </Alert>
                 )}
 

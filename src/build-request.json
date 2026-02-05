@@ -1,95 +1,70 @@
 {
   "kind": "build_request",
-  "title": "Fix long post-Internet-Identity “Validating…” stall, Onboarding React crash, and force II account chooser on each Login click",
+  "title": "Persist onboarding completion in stable storage and remove Landing page SignupTest button",
   "priority": "high",
   "requirements": [
     {
       "id": "REQ-5",
-      "text": "Fix the main /signup flow so that after Internet Identity authorization the app does not remain on the Signup page in a “Validating identity…” state for ~300 seconds. Ensure the UI either (a) progresses through auth steps promptly (identity validation → backend actor ready → routing) or (b) fails fast into a retryable error state with clear instructions, rather than waiting minutes before redirecting to /onboarding.",
-      "target": "frontend",
+      "text": "Persist backend user profile onboarding state in stable storage so `userProfiles` (including `onboardingCompleted`) survives canister upgrades/redeploys and returning authenticated users no longer see onboarding data missing due to backend state resets.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "recent-messages"
         ],
         "quotes": [
-          "it is again taking very very long to redirect me back to SweetSteps after the Authorization.",
-          "It stays like that for around 300 seconds then goes to the Onboarding page",
-          "Please fix the errors above , the react error and the \"validating\" one."
+          "Please do that and please ensure that everything is in perfect working condition."
         ]
       },
       "acceptanceCriteria": [
-        "On mobile and desktop, after completing Internet Identity authorization, the Signup page does not remain stuck showing only “Validating identity…” for minutes.",
-        "If backend actor creation / onboarding access checks do not complete within a reasonable timeout, the page transitions to an error state with a working Retry action (no indefinite loading).",
-        "The AuthStatusBanner step label updates to reflect the actual blocking step (e.g., connecting to backend / checking account status) instead of remaining on a generic “Validating…” label for the entire wait."
+        "After calling `completeOnboarding()`, `canAccessOnboarding()` returns `false` for that caller and remains `false` after a canister upgrade (no reinstall).",
+        "After a canister upgrade, `getCallerUserProfile()` for an onboarded user returns a non-null profile with `onboardingCompleted = true`.",
+        "Existing backend APIs continue to work without signature changes: `completeOnboarding`, `restartOnboarding`, `canAccessOnboarding`, `getCallerUserProfile`, `getUserProfile`, `saveCallerUserProfile`, and `alternateSignup`.",
+        "No new traps/regressions are introduced for anonymous callers beyond current behavior.",
+        "State restoration logic is deterministic: stable state is the source of truth on upgrade, and in-memory structures are rebuilt from it on startup/post-upgrade."
       ]
     },
     {
       "id": "REQ-6",
-      "text": "Fix the Onboarding flow crash that occurs after answering onboarding questions, reported as “Minified React error #31” attempting to render an object with keys {deadline, name, progress, reason}. Ensure onboarding plan preview rendering never attempts to directly render a non-React object; it must safely render strings/ReactNodes only, and gracefully handle unexpected AI response shapes.",
+      "text": "Remove the temporary/backup SignupTest navigation/button from the Landing page UI so users can no longer access `/signup-test` from the landing hero actions.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "recent-messages"
         ],
         "quotes": [
-          "after i answer all the questions, it gives this React error",
-          "Minified React error #31; visit https://react.dev/errors/31?args[]=object%20with%20keys%20%7Bdeadline%2C%20name%2C%20progress%2C%20reason%7D"
+          "Also, please remove the test signup button from the landing page. It's not required anymore"
         ]
       },
       "acceptanceCriteria": [
-        "Completing onboarding and reaching the Step 4 “Sweet Summit” carousel does not crash the React app.",
-        "If any AI response fields used in Onboarding plan preview are objects/arrays instead of strings, the UI renders a safe fallback (e.g., formatted text) and continues functioning.",
-        "Errors from invalid/unexpected AI response shapes are surfaced as user-friendly messages instead of a hard React crash."
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "text": "Update Login behavior so the Internet Identity account chooser is shown on every explicit user Login click (force account selection rather than silently reusing an existing Internet Identity session). This must work reliably on mobile as well as desktop.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "have you made it like, every time the user clicks on login, the II account chooser pop up?"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Clicking the Login button always triggers an Internet Identity chooser/login window, even if the user previously authenticated in the same browser.",
-        "The app does not show an 'Already Logged In' dead-end screen that prevents account switching; users can always initiate account selection from the Login page.",
-        "If the chooser/popup cannot open (blocked), the UI returns quickly to a retryable state with actionable guidance."
-      ]
-    },
-    {
-      "id": "REQ-8",
-      "text": "Ensure the auth UI state machine (Signup + Login) cannot remain in a non-terminal state after a completed Internet Identity authorization. Specifically, add explicit timeouts/guards for post-II steps (identity validation, actor readiness, onboarding check/navigation) so the UI either completes routing or shows an error with Retry without multi-minute waits.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "No, it just says \"validating\""
-        ]
-      },
-      "acceptanceCriteria": [
-        "After II authorization succeeds, the app either routes to the correct next page promptly or shows an error state within the configured post-auth timeout (no ~300s silent wait).",
-        "Retry clears the stuck state and can successfully re-run the auth pipeline without requiring a full page refresh."
+        "`frontend/src/pages/Landing.tsx` no longer renders the \"Test Signup Page\" button/link to `/signup-test`.",
+        "Landing page builds cleanly with no unused imports (e.g., remove `TestTube2` if it becomes unused).",
+        "All remaining Landing page buttons (Start Climbing, Continue Climbing, Why SweetSteps?) continue to function and render correctly."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under frontend/src/components/ui (shadcn UI components are read-only and must be composed, not modified).",
-    "Respect the existing single-canister backend architecture (no additional backend services).",
-    "Use English for all user-facing text."
+    "Backend must remain a single Motoko actor in `backend/main.mo` (no additional backend services).",
+    "Only add `backend/migration.mo` if it is required for a state upgrade; otherwise use upgrade hooks/state patterns in the main actor.",
+    "Do not edit files under `frontend/immutablePaths` (compose existing UI components instead).",
+    "Use English for any user-facing text."
   ],
   "nonGoals": [
-    "Adding new authentication providers beyond Internet Identity.",
-    "Introducing real-time communication or WebSockets.",
-    "Redesigning unrelated pages (Landing, Weekly Mountain, Daily, Fridge) beyond what is necessary to fix the described auth/onboarding issues."
+    "Do not remove the `/signup-test` route/page itself unless explicitly requested; only remove the Landing page button/navigation.",
+    "Do not redesign or change the authentication flows beyond what is necessary to persist `userProfiles` across upgrades.",
+    "Do not add external databases or third-party storage."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

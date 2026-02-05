@@ -110,9 +110,6 @@ export interface backendInterface {
     canAccessOnboarding(): Promise<boolean>;
     completeOnboarding(): Promise<void>;
     getCallerUserProfile(): Promise<User | null>;
-    /**
-     * / Lightweight update call that allows client to bring canister up to speed
-     */
     getCallerUserRole(): Promise<UserRole>;
     getRBACStatus(): Promise<{
         bootstrapped: boolean;
@@ -120,10 +117,8 @@ export interface backendInterface {
     getUserProfile(user: Principal): Promise<User | null>;
     isCallerAdmin(): Promise<boolean>;
     isRBACActive(): Promise<boolean>;
+    restartOnboarding(): Promise<void>;
     saveCallerUserProfile(profile: User): Promise<void>;
-    /**
-     * / Lightweight update call that allows client to bring canister up to speed
-     */
     warmup(): Promise<{
         time: Time;
         caller: Principal;
@@ -302,6 +297,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.isRBACActive();
+            return result;
+        }
+    }
+    async restartOnboarding(): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.restartOnboarding();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.restartOnboarding();
             return result;
         }
     }

@@ -67,27 +67,36 @@ export class AIProxyError extends Error {
 // VALIDATION HELPERS
 // ===============================
 
+const MAX_RAW_RESPONSE_LENGTH = 500;
+
+function truncateRawResponse(raw: string): string {
+  if (raw.length <= MAX_RAW_RESPONSE_LENGTH) {
+    return raw;
+  }
+  return raw.substring(0, MAX_RAW_RESPONSE_LENGTH) + '... (truncated)';
+}
+
 function isValidString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
-function validateWeeklyMountain(data: unknown): WeeklyMountain {
+function validateWeeklyMountain(data: unknown, rawResponse?: string): WeeklyMountain {
   if (!data || typeof data !== 'object') {
-    throw new AIProxyError(
-      'Invalid AI response: weekly mountain data is missing or malformed. Please try again.',
-      false,
-      false
-    );
+    const errorMsg = 'Invalid AI response: weekly mountain data is missing or malformed. Please try again.';
+    const fullMsg = rawResponse 
+      ? `${errorMsg}\n\nRaw AI response:\n${truncateRawResponse(rawResponse)}`
+      : errorMsg;
+    throw new AIProxyError(fullMsg, false, false);
   }
 
   const obj = data as Record<string, unknown>;
 
   if (!isValidString(obj.name) || !isValidString(obj.weeklyTarget) || !isValidString(obj.note)) {
-    throw new AIProxyError(
-      'Invalid AI response: weekly mountain fields are incomplete. Please try again.',
-      false,
-      false
-    );
+    const errorMsg = 'Invalid AI response: weekly mountain fields are incomplete. Please try again.';
+    const fullMsg = rawResponse 
+      ? `${errorMsg}\n\nRaw AI response:\n${truncateRawResponse(rawResponse)}`
+      : errorMsg;
+    throw new AIProxyError(fullMsg, false, false);
   }
 
   return {
@@ -97,31 +106,55 @@ function validateWeeklyMountain(data: unknown): WeeklyMountain {
   };
 }
 
-function validateOnboardingPlanResponse(data: unknown): OnboardingPlanResponse {
+function validateOnboardingPlanResponse(data: unknown, rawResponse?: string): OnboardingPlanResponse {
   if (!data || typeof data !== 'object') {
-    throw new AIProxyError(
-      'Invalid AI response: response data is missing or malformed. Please try again.',
-      false,
-      false
-    );
+    const errorMsg = 'Invalid AI response: response data is missing or malformed. Please try again.';
+    const fullMsg = rawResponse 
+      ? `${errorMsg}\n\nRaw AI response:\n${truncateRawResponse(rawResponse)}`
+      : errorMsg;
+    throw new AIProxyError(fullMsg, false, false);
   }
 
   const obj = data as Record<string, unknown>;
 
   if (!isValidString(obj.bigGoal) || !isValidString(obj.dailyStep)) {
-    throw new AIProxyError(
-      'Invalid AI response: required fields are incomplete. Please try again.',
-      false,
-      false
-    );
+    const errorMsg = 'Invalid AI response: required fields are incomplete. Please try again.';
+    const fullMsg = rawResponse 
+      ? `${errorMsg}\n\nRaw AI response:\n${truncateRawResponse(rawResponse)}`
+      : errorMsg;
+    throw new AIProxyError(fullMsg, false, false);
   }
 
-  const weeklyMountain = validateWeeklyMountain(obj.weeklyMountain);
+  const weeklyMountain = validateWeeklyMountain(obj.weeklyMountain, rawResponse);
 
   return {
     bigGoal: obj.bigGoal,
     weeklyMountain,
     dailyStep: obj.dailyStep,
+  };
+}
+
+function validateDailyStepsResponse(data: unknown, rawResponse?: string): DailyStepsResponse {
+  if (!data || typeof data !== 'object') {
+    const errorMsg = 'Invalid AI response: response data is missing or malformed. Please try again.';
+    const fullMsg = rawResponse 
+      ? `${errorMsg}\n\nRaw AI response:\n${truncateRawResponse(rawResponse)}`
+      : errorMsg;
+    throw new AIProxyError(fullMsg, false, false);
+  }
+
+  const obj = data as Record<string, unknown>;
+
+  if (!Array.isArray(obj.tasks)) {
+    const errorMsg = 'Invalid AI response: tasks array is missing or malformed. Please try again.';
+    const fullMsg = rawResponse 
+      ? `${errorMsg}\n\nRaw AI response:\n${truncateRawResponse(rawResponse)}`
+      : errorMsg;
+    throw new AIProxyError(fullMsg, false, false);
+  }
+
+  return {
+    tasks: obj.tasks,
   };
 }
 
@@ -144,8 +177,10 @@ const ENDPOINTS = {
 async function proxyFetch<TRequest, TResponse>(
   endpoint: string,
   body: TRequest,
-  validator?: (data: unknown) => TResponse
+  validator?: (data: unknown, rawResponse?: string) => TResponse
 ): Promise<TResponse> {
+  let rawResponseText: string | undefined;
+
   try {
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -155,38 +190,42 @@ async function proxyFetch<TRequest, TResponse>(
       body: JSON.stringify(body),
     });
 
+    // Read response as text first so we can include it in errors
+    rawResponseText = await response.text();
+
     if (!response.ok) {
       // Special handling for cold-start related status codes
       if (response.status === 502 || response.status === 503 || response.status === 504) {
-        throw new AIProxyError(
-          'Unable to reach AI right now. The AI service may be waking up (hosted on Render free tier). This can take up to 60 seconds. Please wait a moment and try again.',
-          false,
-          false
-        );
+        const errorMsg = 'Unable to reach AI right now. The AI service may be waking up (hosted on Render free tier). This can take up to 60 seconds. Please wait a moment and try again.';
+        const fullMsg = rawResponseText 
+          ? `${errorMsg}\n\nRaw response:\n${truncateRawResponse(rawResponseText)}`
+          : errorMsg;
+        throw new AIProxyError(fullMsg, false, false);
       }
       
       // Generic error for other non-2xx responses
-      throw new AIProxyError(
-        'Unable to reach AI right now. The service may be temporarily unavailable. Please try again in a moment.',
-        false,
-        false
-      );
+      const errorMsg = 'Unable to reach AI right now. The service may be temporarily unavailable. Please try again in a moment.';
+      const fullMsg = rawResponseText 
+        ? `${errorMsg}\n\nRaw response:\n${truncateRawResponse(rawResponseText)}`
+        : errorMsg;
+      throw new AIProxyError(fullMsg, false, false);
     }
 
+    // Parse JSON from the text
     let data: unknown;
     try {
-      data = await response.json();
+      data = JSON.parse(rawResponseText);
     } catch (parseError) {
-      throw new AIProxyError(
-        'Unable to reach AI right now. Try again. The AI service may be waking up (hosted on Render free tier). This can take up to 60 seconds. Please wait a moment and retry.',
-        false,
-        true
-      );
+      const errorMsg = 'Unable to reach AI right now. Try again. The AI service may be waking up (hosted on Render free tier). This can take up to 60 seconds. Please wait a moment and retry.';
+      const fullMsg = rawResponseText 
+        ? `${errorMsg}\n\nRaw response:\n${truncateRawResponse(rawResponseText)}`
+        : errorMsg;
+      throw new AIProxyError(fullMsg, false, true);
     }
 
     // Validate response if validator provided
     if (validator) {
-      return validator(data);
+      return validator(data, rawResponseText);
     }
 
     return data as TResponse;
@@ -274,7 +313,8 @@ export async function generateDailySteps(
 
   return proxyFetch<DailyStepsRequest, DailyStepsResponse>(
     ENDPOINTS.DAILY_STEPS,
-    request
+    request,
+    validateDailyStepsResponse
   );
 }
 

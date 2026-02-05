@@ -7,7 +7,7 @@ import { toSafeString } from '../utils/safeRender';
 
 export default function SweetSummit() {
   const navigate = useNavigate();
-  const { onboardingResult } = useOnboardingResult();
+  const { onboardingResult, clearOnboardingResult } = useOnboardingResult();
 
   if (!onboardingResult) {
     return (
@@ -20,7 +20,13 @@ export default function SweetSummit() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => navigate({ to: '/onboarding' })} className="w-full">
+            <Button 
+              onClick={() => {
+                clearOnboardingResult();
+                navigate({ to: '/onboarding' });
+              }} 
+              className="w-full"
+            >
               Go to Onboarding
             </Button>
           </CardContent>

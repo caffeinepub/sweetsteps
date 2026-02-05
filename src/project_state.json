@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 162,
+  "projectStateVersion": 204,
   "summary": "SweetSteps is an Internet Computer (ICP) dapp with a Motoko backend canister and a React (Vite) single-page frontend. It uses DFINITY Internet Identity for authentication, bootstraps backend RBAC via a shared secret (non-blocking when unset), and gates a one-time onboarding flow. The frontend provides core routes for Landing, Signup/Login, a multi-step Onboarding wizard with plan preview carousel, Weekly/Daily dashboards, and a Chocolate Fridge rewards dashboard with period toggles and inventory cards. Styling is a chocolate-themed Tailwind/shadcn-ui design system using OKLCH tokens and Google Fonts. AI-generated content is sourced exclusively from an external proxy API (no direct provider calls) and is wired into onboarding plan generation, Weekly Mountain content, and Daily steps with strict request/response contracts plus loading/error UX. The repo also includes a reusable build/deploy template scaffold (Dockerfile, scripts, and canister configs) for packaging/exporting and deploying the app.",
   "existing_features": [
     {
@@ -665,34 +665,78 @@
       "version": 1
     },
     {
-      "id": "feature-fix-the-main-signup-flow-so-that-after-internet-identity-authorization-the-app-does-not-remain-on-the-signup-page-in-a-validating-identity-state-for-300-seconds-ensure-the-ui-either-a-progresses-through-auth-steps-promptly-identity-validation-backend-actor-ready-routing-or-b-fails-fast-into-a-retryable-error-state-with-clear-instructions-rather-than-waiting-minutes-before-redirecting-to-onboarding",
-      "title": "Fix the main /signup flow so that after Internet Identity authorization the app does not remain on the Signup page in a “Validating identity…” state for ~300 seconds. Ensure the UI either (a) progresses through auth steps promptly (identity validation → backend actor ready → routing) or (b) fails fast into a retryable error state with clear instructions, rather than waiting minutes before redirecting to /onboarding.",
+      "id": "IF-56",
+      "title": "Weekly Mountain progress initializes at 0% for first-time users",
+      "synonyms": [
+        "WeeklyMountain 0% progress",
+        "no placeholder progress"
+      ],
+      "description": "Updates the Weekly Mountain dashboard so new/first-time users (post-onboarding) start at 0% progress instead of showing sample/placeholder progress.",
       "reqIds": [
-        "REQ-5"
+        "AR-24"
       ],
       "version": 1
     },
     {
-      "id": "feature-fix-the-onboarding-flow-crash-that-occurs-after-answering-onboarding-questions-reported-as-minified-react-error-31-attempting-to-render-an-object-with-keys-deadline-name-progress-reason-ensure-onboarding-plan-preview-rendering-never-attempts-to-directly-render-a-non-react-object-it-must-safely-render-strings-reactnodes-only-and-gracefully-handle-unexpected-ai-response-shapes",
-      "title": "Fix the Onboarding flow crash that occurs after answering onboarding questions, reported as “Minified React error #31” attempting to render an object with keys {deadline, name, progress, reason}. Ensure onboarding plan preview rendering never attempts to directly render a non-React object; it must safely render strings/ReactNodes only, and gracefully handle unexpected AI response shapes.",
+      "id": "IF-57",
+      "title": "Daily SweetSteps guards undefined tasks/steps arrays to prevent .map crashes",
+      "synonyms": [
+        "Daily map guard",
+        "default empty tasks"
+      ],
+      "description": "Hardens the Daily SweetSteps page to ensure the tasks/steps array is always defined (or safely defaulted) before rendering with `.map`, preventing navigation-time crashes from Weekly Mountain.",
+      "reqIds": [
+        "AR-25"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-58",
+      "title": "Onboarding plan preview uses safe rendering to avoid React error #31 (object rendering)",
+      "synonyms": [
+        "safeRender",
+        "React error #31 fix",
+        "plan preview render guard"
+      ],
+      "description": "Prevents onboarding/plan preview crashes caused by attempting to render raw objects (e.g., {deadline,name,progress,reason}) by safely formatting/stringifying values before rendering in React.",
+      "reqIds": [
+        "AR-29"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-59",
+      "title": "UI token color alignment for element/token 1kltrkn to match 14f6tu6",
+      "synonyms": [
+        "AR-10 color fix",
+        "token parity"
+      ],
+      "description": "Adjusts styling/theme tokens so element/token \"1kltrkn\" uses the same color value as \"14f6tu6\".",
+      "reqIds": [
+        "AR-10"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-60",
+      "title": "Post-auth validation timeout watchdog for Internet Identity flows",
+      "synonyms": [
+        "usePostAuthTimeout",
+        "post-auth timeout",
+        "Validating identity timeout"
+      ],
+      "description": "Adds a dedicated post-auth watchdog timeout for Internet Identity login/signup that detects when the app is stuck in the post-redirect/validation phase (e.g., “Validating identity…”) and forces the UI back to a retryable error/help state rather than hanging indefinitely.",
+      "reqIds": [
+        "AR-11",
+        "AR-28"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-remove-the-temporary-backup-signuptest-navigation-button-from-the-landing-page-ui-so-users-can-no-longer-access-signup-test-from-the-landing-hero-actions",
+      "title": "Remove the temporary/backup SignupTest navigation/button from the Landing page UI so users can no longer access `/signup-test` from the landing hero actions.",
       "reqIds": [
         "REQ-6"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-login-behavior-so-the-internet-identity-account-chooser-is-shown-on-every-explicit-user-login-click-force-account-selection-rather-than-silently-reusing-an-existing-internet-identity-session-this-must-work-reliably-on-mobile-as-well-as-desktop",
-      "title": "Update Login behavior so the Internet Identity account chooser is shown on every explicit user Login click (force account selection rather than silently reusing an existing Internet Identity session). This must work reliably on mobile as well as desktop.",
-      "reqIds": [
-        "REQ-7"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-ensure-the-auth-ui-state-machine-signup-login-cannot-remain-in-a-non-terminal-state-after-a-completed-internet-identity-authorization-specifically-add-explicit-timeouts-guards-for-post-ii-steps-identity-validation-actor-readiness-onboarding-check-navigation-so-the-ui-either-completes-routing-or-shows-an-error-with-retry-without-multi-minute-waits",
-      "title": "Ensure the auth UI state machine (Signup + Login) cannot remain in a non-terminal state after a completed Internet Identity authorization. Specifically, add explicit timeouts/guards for post-II steps (identity validation, actor readiness, onboarding check/navigation) so the UI either completes routing or shows an error with Retry without multi-minute waits.",
-      "reqIds": [
-        "REQ-8"
       ],
       "version": 1
     }
@@ -713,12 +757,6 @@
     {
       "id": "AR-9",
       "summary": "Improve AI proxy call error handling/messaging to better explain unreachable/inactive (Render free tier cold start) scenarios, with clearer guidance (e.g., expected wake-up delay, retry suggestions) across all AI-powered flows.",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-10",
-      "summary": "Update UI styling so element/token \"1kltrkn\" uses the same color as \"14f6tu6\".",
       "reqIds": [],
       "status": "pending"
     },
@@ -747,18 +785,6 @@
       "status": "pending"
     },
     {
-      "id": "AR-24",
-      "summary": "Fix Weekly Mountain dashboard so first-time users see 0% progress (no sample/placeholder progress shown after onboarding).",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-25",
-      "summary": "Fix Daily SweetSteps crash when navigating from Weekly Mountain (\"Cannot read properties of undefined (reading 'map')\"); ensure tasks array is always defined or guarded.",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
       "id": "AR-26",
       "summary": "Update login behavior so returning users with an already-created account are routed directly to /weekly-mountain (instead of onboarding), while still correctly handling users who have not completed onboarding.",
       "reqIds": [],
@@ -777,15 +803,53 @@
       "status": "pending"
     },
     {
-      "id": "AR-29",
-      "summary": "Fix onboarding flow crash after answering questions: Minified React error #31 (attempting to render an object with keys {deadline, name, progress, reason}) during onboarding/plan preview rendering.",
+      "id": "AR-30",
+      "summary": "Ensure Internet Identity account chooser is shown on every Login click (force account selection rather than silently reusing an existing II session), including reliable popup behavior on mobile.",
       "reqIds": [],
       "status": "pending"
     },
     {
-      "id": "AR-30",
-      "summary": "Ensure Internet Identity account chooser is shown on every Login click (force account selection rather than silently reusing an existing II session), including reliable popup behavior on mobile.",
+      "id": "AR-31",
+      "summary": "When AI proxy response validation fails (onboarding/weekly/daily), surface the raw AI/proxy response content for debugging—e.g., include it in the thrown error message or a developer-only details panel/log—so it’s clear what fields are missing/malformed.",
       "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-32",
+      "summary": "Resolve onboarding AI response schema mismatch: align proxy output with frontend validator (dailyStep must be string; weeklyTarget must be string; ensure weeklyMountain fields are strings) or update validator/contracts to accept structured dailyStep/typed weeklyTarget.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-33",
+      "summary": "Document the exact current AI proxy response validation rules (onboarding / weekly mountain / daily SweetSteps) in plain-English: required fields, expected types, nested requirements, expected shapes, and rejection conditions (no code).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-34",
+      "summary": "Fix inconsistency/loop where users who have completed onboarding sometimes see 'onboarding data not found' after login and 'Go to Onboarding' loops back; ensure onboarding gating is consistent and that users who have not completed onboarding after signup are automatically redirected to Onboarding to start fresh.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-35",
+      "summary": "Persist userProfiles/onboardingCompleted (and any required onboarding data) in stable storage so canister upgrades/reinstalls don’t desync backend onboarding state from existing Internet Identity sessions, preventing post-login 'onboarding data not found' loops.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-36",
+      "summary": "Remove the temporary/backup SignupTest navigation/button from the Landing page now that it’s no longer needed.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-37",
+      "summary": "Persist backend user profile onboarding state in stable storage so `userProfiles` (including `onboardingCompleted`) survives canister upgrades/redeploys and returning authenticated users no longer see onboarding data missing due to backend state resets.",
+      "reqIds": [
+        "REQ-5"
+      ],
       "status": "pending"
     }
   ],
@@ -805,13 +869,13 @@
     "Backend RBAC assignments and onboarding completion state are stored in non-stable, in-memory maps; canister upgrades/reinstalls will lose roles and onboarding completion data.",
     "Login and signup flows still hang (non-terminal auth state) after latest deployment; likely related to RBAC bootstrap/init or stalled Internet Identity popup handling and needs investigation.",
     "In the current \"drafts\" build, Internet Identity popup/chooser never opens for login/signup (hang occurs before II window appears), suggesting a user-gesture/popup-blocking issue or stalled auth initiation.",
-    "In drafts build on Chrome mobile: tapping Login/Sign Up shows button loading spinner but Internet Identity popup/chooser never opens; no popup-blocked indicator is shown.",
     "AI proxy hosted on Render free tier may be asleep/cold-starting, causing long waits or 'Unable to reach AI' errors; current messaging is too minimal and should better guide users (wake-up delay + retry).",
-    "Internet Identity login/signup can take an excessively long time when the popup/chooser fails to open; needs faster timeout/failover so the UI returns quickly to a retryable state.",
-    "Weekly Mountain dashboard shows sample/placeholder progress for first-time users after onboarding; should start at 0% progress.",
-    "Daily SweetSteps can crash when navigating from Weekly Mountain (\"Cannot read properties of undefined (reading 'map')\"); tasks array is undefined and must be guarded/defaulted.",
     "Main /signup flow on mobile can stall ~300s after Internet Identity authorization while stuck on “Validating identity…” (auth status banner does not advance), then eventually proceeds to Onboarding.",
-    "Onboarding flow can crash after answering questions with Minified React error #31 (attempting to render an object with keys {deadline, name, progress, reason}) during onboarding/plan preview rendering."
+    "Onboarding Step 3 (plan generation) can fail with: \"Invalid AI response: weekly mountain fields are incomplete\" indicating the AI proxy returned a JSON payload missing required `weeklyMountain` fields (schema/validation mismatch).",
+    "Onboarding plan generation can fail validation when the AI proxy returns `dailyStep` as an array of items (e.g., `[{day, task, time}, ...]`) instead of the required string; frontend then throws \"Invalid AI response: required fields are incomplete\".",
+    "After successful login and previously completing onboarding, app sometimes shows an \"onboarding data not found\" error; the CTA/button to \"Go to Onboarding\" loops back to the same error page (possible routing/gating/context persistence issue).",
+    "Onboarding plan proxy sometimes returns type-mismatched fields that fail the frontend validator even though JSON is well-formed (e.g., `dailyStep` returned as an object instead of required string; `weeklyMountain.weeklyTarget` returned as a number instead of required string).",
+    "Login flow can surface an error state \"User is already authenticated\" (after \"Backend ready!\"), suggesting inconsistent auth-state handling (already-authenticated session treated as an error instead of proceeding/redirecting)."
   ],
   "isFixRequest": true,
   "gameProjectType": "none",

@@ -1,128 +1,21 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Stabilize Internet Identity auth flow (timeouts, step-accurate status) and harden onboarding plan rendering",
+  "title": "Remove Landing page SignupTest CTA",
   "requirements": [
     {
-      "id": "REQ-5",
-      "summary": "Prevent /signup from stalling for minutes after Internet Identity authorization by adding explicit post-II timeouts, step-accurate progress, and a retryable error state.",
-      "acceptanceCriteria": [
-        "On mobile and desktop, after completing Internet Identity authorization, the Signup page does not remain stuck showing only “Validating identity…” for minutes.",
-        "If backend actor creation / onboarding access checks do not complete within a reasonable timeout, the page transitions to an error state with a working Retry action (no indefinite loading).",
-        "The AuthStatusBanner step label updates to reflect the actual blocking step (e.g., connecting to backend / checking account status) instead of remaining on a generic “Validating…” label for the entire wait."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/Signup.tsx",
-          "operation": "modify",
-          "description": "Add explicit post-II guards/timeouts for the validating→actor-ready→navigation pipeline so the UI fails fast into a retryable error state instead of stalling; update diagnostics step transitions so AuthStatusBanner reflects the actual blocking step; ensure Retry fully resets attempt state and reruns the pipeline. Use the existing authorization component-backed auth flow patterns already present in the app; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/useActor.ts",
-          "operation": "modify",
-          "description": "Expose actor creation readiness more explicitly to the UI (e.g., stable 'isFetching' semantics and/or a derived 'isReady' flag) so /signup can reliably detect 'actor ready' vs 'still connecting' and trigger post-auth timeout handling without multi-minute waits."
-        },
-        {
-          "path": "frontend/src/hooks/useAuthFlowDiagnostics.ts",
-          "operation": "modify",
-          "description": "Add/adjust supported auth steps (or step label mapping usage) so the flow can represent 'connecting to backend' / 'actor readiness' distinctly from 'identity validation', enabling accurate progress messaging in AuthStatusBanner."
-        }
-      ]
-    },
-    {
       "id": "REQ-6",
-      "summary": "Fix the onboarding plan preview React crash by safely rendering AI response fields and gracefully handling unexpected response shapes with user-friendly messaging.",
+      "summary": "Remove the temporary \"Test Signup Page\" CTA from the Landing hero actions while keeping the remaining hero buttons intact and the page free of unused imports.",
       "acceptanceCriteria": [
-        "Completing onboarding and reaching the Step 4 “Sweet Summit” carousel does not crash the React app.",
-        "If any AI response fields used in Onboarding plan preview are objects/arrays instead of strings, the UI renders a safe fallback (e.g., formatted text) and continues functioning.",
-        "Errors from invalid/unexpected AI response shapes are surfaced as user-friendly messages instead of a hard React crash."
+        "`frontend/src/pages/Landing.tsx` no longer renders the \"Test Signup Page\" button/link to `/signup-test`.",
+        "Landing page builds cleanly with no unused imports (e.g., remove `TestTube2` if it becomes unused).",
+        "All remaining Landing page buttons (Start Climbing, Continue Climbing, Why SweetSteps?) continue to function and render correctly."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/lib/aiProxyClient.ts",
+          "path": "frontend/src/pages/Landing.tsx",
           "operation": "modify",
-          "description": "Harden AI response handling for onboarding-plan by validating/coercing returned fields into render-safe primitives (strings) and throwing a user-friendly error when the response is unusable, so consumers never try to render raw objects/arrays."
-        },
-        {
-          "path": "frontend/src/pages/Onboarding.tsx",
-          "operation": "modify",
-          "description": "Update Sweet Summit (Step 4) carousel rendering to use a safe text/rendering helper for any AI-derived fields (bigGoal, weeklyMountain.name/weeklyTarget/note, dailyStep); if normalization detects unexpected shapes, show a non-crashing, user-friendly error message and allow retry/redo rather than rendering an object."
-        },
-        {
-          "path": "frontend/src/pages/SweetSummit.tsx",
-          "operation": "modify",
-          "description": "Add defensive rendering for onboardingResult.aiResponse fields (render-safe coercion and/or fallback UI) so unexpected AI response shapes cannot crash the page."
-        },
-        {
-          "path": "frontend/src/contexts/OnboardingResultContext.tsx",
-          "operation": "modify",
-          "description": "Relax/align stored onboarding result typing to support safe runtime validation (e.g., store a normalized, render-safe shape and optionally retain a raw payload separately), ensuring future renders cannot directly attempt to render non-React objects."
-        },
-        {
-          "path": "frontend/src/utils/safeRender.ts",
-          "operation": "create",
-          "description": "Add small utilities to convert unknown AI-provided values into safe strings/ReactNodes (e.g., string passthrough, array join, object pretty-print) and to produce consistent user-facing fallback text in English."
-        }
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "summary": "Force the Internet Identity account chooser on every explicit Login click (no silent session reuse / dead-end 'Already Logged In' screen), with quick recovery guidance if popups are blocked.",
-      "acceptanceCriteria": [
-        "Clicking the Login button always triggers an Internet Identity chooser/login window, even if the user previously authenticated in the same browser.",
-        "The app does not show an 'Already Logged In' dead-end screen that prevents account switching; users can always initiate account selection from the Login page.",
-        "If the chooser/popup cannot open (blocked), the UI returns quickly to a retryable state with actionable guidance."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useInternetIdentity.ts",
-          "operation": "modify",
-          "description": "Add a user-gesture-safe 'force account selection' login mode (e.g., optional parameter) that avoids the current 'User is already authenticated' early-exit and triggers a fresh II login attempt from a click; keep logout/clear behavior compatible with immediate re-login. This is part of the existing authorization component-backed auth flow; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/Login.tsx",
-          "operation": "modify",
-          "description": "Remove/replace the 'Already Logged In' dead-end UI and ensure the Login button always initiates the forced account chooser flow (desktop + mobile), while preserving existing popup-block detection and showing retryable guidance via existing auth panels. Use the existing authorization component-backed auth flow patterns already present in the app; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/useMobileInternetIdentityLoginPatched.ts",
-          "operation": "modify",
-          "description": "Ensure the mobile-safe login path supports the same 'force chooser' semantics as desktop (e.g., by avoiding reuse checks and ensuring a fresh II interaction on each click) while preserving user-gesture constraints."
-        }
-      ]
-    },
-    {
-      "id": "REQ-8",
-      "summary": "Ensure Signup + Login auth UI state machines cannot remain non-terminal after II authorization by adding explicit post-auth timeouts/guards and reliable Retry that re-runs the pipeline without refresh.",
-      "acceptanceCriteria": [
-        "After II authorization succeeds, the app either routes to the correct next page promptly or shows an error state within the configured post-auth timeout (no ~300s silent wait).",
-        "Retry clears the stuck state and can successfully re-run the auth pipeline without requiring a full page refresh."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/Signup.tsx",
-          "operation": "modify",
-          "description": "Add post-II timeout/guard coverage for all blocking steps after authorization (identity validation, actor readiness, navigation), and ensure a terminal error + Retry path is always reached if those steps exceed configured thresholds (no indefinite waiting). Use the existing authorization component-backed auth flow patterns already present in the app; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/Login.tsx",
-          "operation": "modify",
-          "description": "Add post-II timeout/guard coverage for all blocking steps after authorization (identity validation, actor readiness, onboarding access check, navigation), and ensure a terminal error + Retry path is always reached if those steps exceed configured thresholds (no indefinite waiting). Use the existing authorization component-backed auth flow patterns already present in the app; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/useStalledAuthDetection.ts",
-          "operation": "modify",
-          "description": "Extend stall detection to cover post-II steps beyond 'logging-in' (e.g., actor readiness and onboarding check) so the UI can reliably detect and surface stalls after authorization rather than only during popup/login, with configurable timeouts per step."
-        },
-        {
-          "path": "frontend/src/components/auth/AuthStatusBanner.tsx",
-          "operation": "modify",
-          "description": "Ensure banner messaging accurately reflects the current blocking step and clearly indicates when a post-auth timeout occurs (with Retry available), using English user-facing text. Compose shadcn-ui components without modifying any files under frontend/src/components/ui; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/usePostAuthTimeout.ts",
-          "operation": "create",
-          "description": "Create a focused hook that starts a timer for designated post-II phases (validation/actor-ready/onboarding-check) and returns a terminal timeout state plus reset/retry helpers, enabling consistent fail-fast behavior across Signup and Login."
+          "description": "Remove the hero action Link/Button that navigates to `/signup-test` (\"Test Signup Page\") and clean up any now-unused imports (notably `TestTube2`). Ensure existing shadcn-ui `Button`/`Card` usage remains unchanged for the remaining CTAs and modal (verify the component's usage instructions before implementing)."
         }
       ]
     }

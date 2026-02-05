@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { X, ChevronLeft, ChevronRight, Mountain, TestTube2 } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Mountain } from 'lucide-react';
 
 export default function Landing() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -114,18 +114,6 @@ export default function Landing() {
             >
               Why SweetSteps?
             </Button>
-
-            {/* Test Signup Button */}
-            <Link to="/signup-test">
-              <Button 
-                size="lg" 
-                variant="outline"
-                className="w-full text-base font-semibold h-12 rounded-xl border-dashed border-2 border-accent bg-accent/5 hover:bg-accent/10 text-accent-foreground"
-              >
-                <TestTube2 className="w-5 h-5 mr-2" />
-                Test Signup Page
-              </Button>
-            </Link>
           </div>
         </div>
       </main>

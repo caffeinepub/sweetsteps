@@ -40,6 +40,7 @@ export const idlService = IDL.Service({
   'getUserProfile' : IDL.Func([IDL.Principal], [IDL.Opt(User)], ['query']),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'isRBACActive' : IDL.Func([], [IDL.Bool], ['query']),
+  'restartOnboarding' : IDL.Func([], [], []),
   'saveCallerUserProfile' : IDL.Func([User], [], []),
   'warmup' : IDL.Func(
       [],
@@ -83,6 +84,7 @@ export const idlFactory = ({ IDL }) => {
     'getUserProfile' : IDL.Func([IDL.Principal], [IDL.Opt(User)], ['query']),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'isRBACActive' : IDL.Func([], [IDL.Bool], ['query']),
+    'restartOnboarding' : IDL.Func([], [], []),
     'saveCallerUserProfile' : IDL.Func([User], [], []),
     'warmup' : IDL.Func(
         [],

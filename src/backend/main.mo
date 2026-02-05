@@ -1,20 +1,22 @@
+import Text "mo:core/Text";
 import Map "mo:core/Map";
 import Principal "mo:core/Principal";
-import Text "mo:core/Text";
 import Time "mo:core/Time";
 import Runtime "mo:core/Runtime";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 import AltSignup "AltSignup";
+import Migration "migration";
+import Iter "mo:core/Iter";
 
+// Apply migration function to actor with persistent state
+(with migration = Migration.run)
 actor {
-  // Setup authorization system
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
   var rbacBootstrapped : Bool = false;
 
-  /// Lightweight update call that allows client to bring canister up to speed
   public shared ({ caller }) func warmup() : async { caller : Principal; time : Time.Time } {
     {
       caller;
@@ -22,7 +24,6 @@ actor {
     };
   };
 
-  // Bootstrap RBAC
   public shared ({ caller }) func bootstrapRBAC() : async () {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       Runtime.trap("Unauthorized: Only admins can bootstrap RBAC");
@@ -30,7 +31,6 @@ actor {
     rbacBootstrapped := true;
   };
 
-  // Query to check RBAC status
   public query func getRBACStatus() : async {
     bootstrapped : Bool;
   } {
@@ -39,7 +39,6 @@ actor {
     };
   };
 
-  // Legacy query for backwards compatibility
   public query func isRBACActive() : async Bool {
     rbacBootstrapped;
   };
@@ -50,11 +49,9 @@ actor {
     onboardingCompleted : Bool;
   };
 
-  let userProfiles = Map.empty<Principal, User>();
+  var userProfiles = Map.empty<Principal, User>();
 
-  // Complete onboarding - fails closed if RBAC active but user unauthorized
   public shared ({ caller }) func completeOnboarding() : async () {
-    // Require user permission if RBAC is bootstrapped
     if (rbacBootstrapped and not AccessControl.hasPermission(accessControlState, caller, #user)) {
       Runtime.trap("Unauthorized: Only authenticated users can complete onboarding");
     };
@@ -70,11 +67,25 @@ actor {
     userProfiles.add(caller, updatedUser);
   };
 
-  // Check if user can access onboarding
-  public query ({ caller }) func canAccessOnboarding() : async Bool {
-    // Require user permission if RBAC is bootstrapped
+  public shared ({ caller }) func restartOnboarding() : async () {
     if (rbacBootstrapped and not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      return false;
+      Runtime.trap("Unauthorized: Only authenticated users can restart onboarding");
+    };
+
+    switch (userProfiles.get(caller)) {
+      case (null) {
+        Runtime.trap("No user profile found for caller. Please create a profile before restarting onboarding");
+      };
+      case (?user) {
+        let updatedUser : User = { user with onboardingCompleted = false };
+        userProfiles.add(caller, updatedUser);
+      };
+    };
+  };
+
+  public query ({ caller }) func canAccessOnboarding() : async Bool {
+    if (rbacBootstrapped and not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: Only authenticated users can check onboarding access");
     };
 
     switch (userProfiles.get(caller)) {
@@ -83,9 +94,7 @@ actor {
     };
   };
 
-  // Get caller's user profile
   public query ({ caller }) func getCallerUserProfile() : async ?User {
-    // Require user permission if RBAC is bootstrapped
     if (rbacBootstrapped and not AccessControl.hasPermission(accessControlState, caller, #user)) {
       Runtime.trap("Unauthorized: Only authenticated users can view profiles");
     };
@@ -93,9 +102,7 @@ actor {
     userProfiles.get(caller);
   };
 
-  // Get any user's profile (admin can view all, users can view their own)
   public query ({ caller }) func getUserProfile(user : Principal) : async ?User {
-    // Enforce access control if RBAC is bootstrapped
     if (
       rbacBootstrapped and caller != user and not AccessControl.isAdmin(accessControlState, caller)
     ) {
@@ -105,9 +112,7 @@ actor {
     userProfiles.get(user);
   };
 
-  // Save caller's user profile
   public shared ({ caller }) func saveCallerUserProfile(profile : User) : async () {
-    // Require user permission if RBAC is bootstrapped
     if (rbacBootstrapped and not AccessControl.hasPermission(accessControlState, caller, #user)) {
       Runtime.trap("Unauthorized: Only authenticated users can save profiles");
     };
@@ -115,19 +120,10 @@ actor {
     userProfiles.add(caller, profile);
   };
 
-  // Alternative Signup Test
   public shared ({ caller }) func alternateSignup(username : Text, password : Text) : async {
     success : Bool;
     message : Text;
   } {
-    // Authorization: Only guests/anonymous users should be able to sign up
-    // If RBAC is bootstrapped and caller already has user/admin role, they shouldn't sign up again
-    if (rbacBootstrapped and AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized: Already registered users cannot sign up again");
-    };
-
-    // Validate that caller is not anonymous when RBAC is active
-    // (In production, you'd want proper identity verification)
     if (caller.isAnonymous()) {
       return {
         success = false;
@@ -135,7 +131,10 @@ actor {
       };
     };
 
-    // Validate inputs
+    if (rbacBootstrapped and AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: Already registered users cannot sign up again");
+    };
+
     if (username.size() < 3) {
       return {
         success = false;
@@ -150,7 +149,6 @@ actor {
       };
     };
 
-    // Check if user already exists
     switch (userProfiles.get(caller)) {
       case (?_existing) {
         return {
@@ -159,14 +157,12 @@ actor {
         };
       };
       case null {
-        // Proceed with signup
+        // Proceed with signup.
       };
     };
 
-    // Handle the signup logic
     let signupResult = AltSignup.handleSignup(username, password);
 
-    // If signup successful, create user profile and assign role
     if (signupResult.success) {
       let currentTime = Time.now();
       let newUser : User = {
@@ -174,14 +170,6 @@ actor {
         onboardingCompleted = false;
       };
       userProfiles.add(caller, newUser);
-
-      // Assign user role if RBAC is bootstrapped
-      if (rbacBootstrapped) {
-        // Note: assignRole includes admin-only guard, so this would need to be called
-        // by an admin or we need a different mechanism for self-registration
-        // For now, we document this limitation
-        // In production, you'd want a separate registration flow or auto-assignment
-      };
     };
 
     signupResult;
