@@ -15,7 +15,7 @@ const WARMUP_TIMEOUT_MS = 30000; // 30 seconds
 
 export function useCanisterWarmup(autoStart: boolean = false): UseCanisterWarmupResult {
   const { actor } = useActor();
-  const [state, setState] = useState<WarmupState>('ready'); // Always ready since no warmup needed
+  const [state, setState] = useState<WarmupState>('idle');
   
   // Guard to ensure auto-start runs at most once per hook instance
   const autoStartAttemptedRef = useRef(false);
@@ -27,27 +27,67 @@ export function useCanisterWarmup(autoStart: boolean = false): UseCanisterWarmup
   const isWarmingRef = useRef(false);
 
   const warmup = useCallback(async () => {
-    // No-op: Backend no longer has warmup method
-    // Just mark as ready immediately when actor is available
-    if (actor) {
-      setState('ready');
-      console.log('[useCanisterWarmup] Actor ready (no warmup needed)');
+    if (!actor) {
+      console.log('[useCanisterWarmup] Actor not available, cannot warmup');
+      return;
+    }
+
+    // Prevent concurrent warmup calls
+    if (isWarmingRef.current) {
+      console.log('[useCanisterWarmup] Warmup already in progress, skipping');
+      return;
+    }
+
+    isWarmingRef.current = true;
+    invocationCountRef.current += 1;
+    const invocationId = invocationCountRef.current;
+
+    console.log(`[useCanisterWarmup] Starting warmup #${invocationId}`);
+    setState('warming');
+
+    const timeoutId = setTimeout(() => {
+      if (isWarmingRef.current) {
+        console.warn(`[useCanisterWarmup] Warmup #${invocationId} timed out after ${WARMUP_TIMEOUT_MS}ms`);
+        setState('failed');
+        isWarmingRef.current = false;
+      }
+    }, WARMUP_TIMEOUT_MS);
+
+    try {
+      const result = await actor.ping();
+      clearTimeout(timeoutId);
+      
+      if (result === true) {
+        console.log(`[useCanisterWarmup] Warmup #${invocationId} succeeded`);
+        setState('ready');
+      } else {
+        console.warn(`[useCanisterWarmup] Warmup #${invocationId} returned unexpected value:`, result);
+        setState('failed');
+      }
+    } catch (error) {
+      clearTimeout(timeoutId);
+      console.error(`[useCanisterWarmup] Warmup #${invocationId} failed:`, error);
+      setState('failed');
+    } finally {
+      isWarmingRef.current = false;
     }
   }, [actor]);
 
   const retry = useCallback(() => {
     console.log('[useCanisterWarmup] Manual retry triggered');
-    setState('ready');
-  }, []);
+    setState('idle');
+    // Trigger warmup on next effect cycle
+    setTimeout(() => warmup(), 0);
+  }, [warmup]);
 
   // Auto-start warmup when actor is ready - runs at most once per hook instance
   useEffect(() => {
-    if (autoStart && actor && !autoStartAttemptedRef.current) {
+    if (autoStart && actor && !autoStartAttemptedRef.current && state === 'idle') {
       console.log('[useCanisterWarmup] Auto-start triggered');
       autoStartAttemptedRef.current = true;
       warmup();
     }
-  }, [autoStart, actor, warmup]);
+  }, [autoStart, actor, warmup, state]);
 
   return {
     state,

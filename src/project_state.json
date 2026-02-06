@@ -1,56 +1,17 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "App auth + onboarding flow with a post-auth display-name step placed immediately before onboarding begins (first question: \"What is your big goal?\").",
+  "summary": "New project",
   "architectural_notes": [
-    "Onboarding flow begins with the question: \"What is your big goal?\".",
-    "Display-name step should run post-auth and gate entry into onboarding for every new user."
+    "Desired navigation flow order: Landing → Sign up → Internet Identity auth → Display name modal → Onboarding → Sweet Summit carousel → Weekly Mountain page (weekly mountain only after carousel completes)."
   ],
   "known_issues": [
-    "Display-name modal currently includes an X/close button that does nothing and should be removed."
+    "Bug: After onboarding, Sweet Summit carousel flashes briefly then app navigates to Weekly Mountain page; display name modal does not appear (navigation order incorrect)."
   ],
   "isFixRequest": true,
-  "existing_features": [
-    {
-      "id": "feature-show-the-display-name-prompt-only-after-a-user-has-successfully-authenticated-and-immediately-before-onboarding-begins-i-e-before-the-first-onboarding-question-the-prompt-must-be-part-of-the-new-user-flow-users-who-have-not-completed-onboarding-yet-and-it-should-not-appear-for-users-who-already-completed-onboarding",
-      "title": "Show the display-name prompt only after a user has successfully authenticated and immediately before onboarding begins (i.e., before the first onboarding question). The prompt must be part of the new-user flow (users who have not completed onboarding yet), and it should not appear for users who already completed onboarding.",
-      "reqIds": [
-        "REQ-1"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-remove-the-non-functional-x-close-button-from-the-display-name-modal-while-keeping-all-other-ui-and-behavior-the-same-validation-save-skip-outside-click-behavior-etc",
-      "title": "Remove the non-functional “X”/close button from the display-name modal while keeping all other UI and behavior the same (validation, Save, Skip, outside-click behavior, etc.).",
-      "reqIds": [
-        "REQ-3"
-      ],
-      "version": 1
-    }
-  ],
-  "new_feature_requests": [
-    {
-      "id": "AR-1",
-      "summary": "Move display-name step to appear after successful authentication and immediately before onboarding starts (before the \"What is your big goal?\" step) for every new user.",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Remove the X/close button from the display-name modal (keep everything else the same).",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-4",
-      "summary": "Update all post-auth redirect logic to route new users through the display-name step before landing them in onboarding (including the Internet Identity authorize callback handler and auth-page auto-redirect logic).",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "status": "pending"
-    }
-  ],
-  "projectName": "Move display-name prompt to post-auth pre-onboarding and remove the non-functional close button",
+  "existing_features": [],
+  "new_feature_requests": [],
+  "projectName": "Untitled request",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

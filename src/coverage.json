@@ -1,64 +1,24 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-06T08:18:04.498Z",
+  "generatedAt": "2026-02-06T11:03:42.337Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 2,
-    "items": [
-      {
-        "id": "REQ-1",
-        "summary": "Show the display-name prompt only after a user has successfully authenticated and immediately before onboarding begins (i.e., before the first onboarding question). The prompt must be part of the new-user flow (users who have not completed onboarding yet), and it should not appear for users who already completed onboarding.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/RootLayout.tsx",
-          "frontend/src/pages/Onboarding.tsx",
-          "frontend/src/components/auth/PostAuthDisplayNameGate.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/RootLayout.tsx",
-          "frontend/src/pages/Onboarding.tsx",
-          "frontend/src/components/auth/PostAuthDisplayNameGate.tsx"
-        ]
-      },
-      {
-        "id": "REQ-2",
-        "summary": "Update all post-auth redirect logic to route new users through the display-name step before landing them in onboarding (including the Internet Identity authorize callback handler and auth-page auto-redirect logic).",
-        "status": "missing",
-        "plannedFiles": [
-          "frontend/src/components/auth/InternetIdentityAuthorizeCallbackHandler.tsx",
-          "frontend/src/hooks/useAuthPageAutoredirect.ts",
-          "frontend/src/pages/Login.tsx",
-          "frontend/src/pages/Signup.tsx"
-        ],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-3",
-        "summary": "Remove the non-functional “X”/close button from the display-name modal while keeping all other UI and behavior the same (validation, Save, Skip, outside-click behavior, etc.).",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/auth/DisplayNamePromptDialog.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/auth/DisplayNamePromptDialog.tsx"
-        ]
-      }
-    ]
+    "total": 0,
+    "implemented": 0,
+    "items": []
   },
   "changedFiles": [
+    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/RootLayout.tsx",
-    "frontend/src/components/auth/DisplayNamePromptDialog.tsx",
     "frontend/src/components/auth/PostAuthDisplayNameGate.tsx",
-    "frontend/src/pages/Onboarding.tsx",
+    "frontend/src/pages/Signup.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

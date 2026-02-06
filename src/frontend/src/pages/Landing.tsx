@@ -3,10 +3,14 @@ import { Link } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { X, ChevronLeft, ChevronRight, Mountain } from 'lucide-react';
+import { useCanisterWarmup } from '../hooks/useCanisterWarmup';
 
 export default function Landing() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Pre-warm the canister automatically on mount
+  useCanisterWarmup(true);
 
   const features = [
     {

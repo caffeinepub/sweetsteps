@@ -1,76 +1,10 @@
 {
   "kind": "build_request",
-  "title": "Move display-name prompt to post-auth pre-onboarding and remove the non-functional close button",
+  "title": "Untitled request",
   "priority": "normal",
-  "requirements": [
-    {
-      "id": "REQ-1",
-      "text": "Show the display-name prompt only after a user has successfully authenticated and immediately before onboarding begins (i.e., before the first onboarding question). The prompt must be part of the new-user flow (users who have not completed onboarding yet), and it should not appear for users who already completed onboarding.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "that display name thing should come up after they are authenticated. Like right before onboarding.",
-          "Yes. Every new user",
-          "They are asked what is their big goal. That is the first step in the onboarding flow."
-        ]
-      },
-      "acceptanceCriteria": [
-        "After a successful authentication, if the caller does not yet have a backend profile (onboarding incomplete) and they have no local display name and have not skipped, the display-name prompt is shown before the onboarding UI is accessible.",
-        "If the caller already has a backend profile (onboarding complete), the display-name prompt is not shown as part of navigation/redirect to the post-onboarding destination.",
-        "The onboarding page’s first step (the goal question) is not shown until the display-name prompt has been completed (Save) or dismissed via the existing Skip action.",
-        "The display-name prompt does not appear for anonymous identities."
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "text": "Update all post-auth redirect logic to route new users through the display-name step before landing them in onboarding (including the Internet Identity authorize callback handler and auth-page auto-redirect logic).",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "move the display‑name step to appear right after authentication and right before the first onboarding question (“What is your big goal?”)"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Flows that currently navigate new authenticated users to /onboarding (e.g., callback-handling and auth-page auto-redirect) instead trigger the display-name step first when the display-name gate conditions are met.",
-        "If the user already has a display name saved (or has skipped for that principal), the app proceeds directly to onboarding without showing the prompt.",
-        "No redirect loops occur (e.g., repeatedly re-triggering the display-name step)."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Remove the non-functional “X”/close button from the display-name modal while keeping all other UI and behavior the same (validation, Save, Skip, outside-click behavior, etc.).",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "in the display name modal please remove the x button because it is not doing anything. Keep everything else the exact same."
-        ]
-      },
-      "acceptanceCriteria": [
-        "The display-name modal no longer renders a visible close (X) control.",
-        "The modal remains non-dismissable via clicking outside (as it is now), and still supports only the existing Save and Skip actions for dismissal/progression.",
-        "No other text, layout, or button behavior in the display-name modal changes aside from removing the X control."
-      ]
-    }
-  ],
-  "constraints": [
-    "Do not modify any files under frontend/src/components/ui (Shadcn UI sources are read-only).",
-    "Keep all user-facing text in English.",
-    "Backend remains single-actor (no additional backend services/canisters)."
-  ],
-  "nonGoals": [
-    "Changing onboarding questions, steps, or copy beyond inserting the display-name step before onboarding begins.",
-    "Removing or redesigning the existing Skip-for-now behavior for the display-name prompt.",
-    "Adding third-party authentication providers beyond Internet Identity."
-  ],
+  "requirements": [],
+  "constraints": [],
+  "nonGoals": [],
   "imageRequirements": {
     "required": [],
     "edits": []

@@ -24,5 +24,6 @@ export interface backendInterface {
     getCallerUserRole(): Promise<UserRole>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
+    ping(): Promise<boolean>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
 }

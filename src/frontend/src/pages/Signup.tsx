@@ -12,6 +12,7 @@ import { usePostAuthTimeout } from '../hooks/usePostAuthTimeout';
 import { useAuthPageAutoredirect } from '../hooks/useAuthPageAutoredirect';
 import { isIdentityValid, isSessionStale } from '../utils/identityValidation';
 import { getPlatformInfo, isChromeAndroid } from '../utils/platform';
+import { setNewAccountFlag } from '../utils/sessionFlags';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
@@ -22,7 +23,7 @@ import { AuthStatusBanner } from '../components/auth/AuthStatusBanner';
 import { CanisterWarmupBanner } from '../components/auth/CanisterWarmupBanner';
 import { getUrlParameter } from '../utils/urlParams';
 
-type AttemptPhase = 'idle' | 'connecting' | 'validating' | 'checking-profile' | 'redirecting' | 'error';
+type AttemptPhase = 'idle' | 'connecting' | 'validating' | 'checking-profile' | 'waiting-for-display-name' | 'redirecting' | 'error';
 
 export default function Signup() {
   const { login: iiLogin, clear: iiClear, loginError: iiLoginError, identity: iiIdentity, loginStatus: iiLoginStatus, isInitializing: iiInitializing } = useInternetIdentity();
@@ -229,9 +230,9 @@ export default function Signup() {
     }
   }, [iiIdentity, attemptPhase, diagnostics, validationTimeout]);
 
-  // Check profile and redirect after validation - ONLY if user initiated auth
+  // Check profile and set flag - ONLY if user initiated auth
   useEffect(() => {
-    const checkProfileAndRedirect = async () => {
+    const checkProfileAndSetFlag = async () => {
       // CRITICAL: Only proceed if user initiated auth in this visit
       if (!userInitiatedAuthRef.current) {
         return;
@@ -239,8 +240,8 @@ export default function Signup() {
 
       if (!validatedIdentity || !iiIdentity || !actor || actorFetching) return;
       
-      // Don't run if we're already checking or redirecting
-      if (attemptPhase === 'checking-profile' || attemptPhase === 'redirecting') return;
+      // Don't run if we're already checking or waiting
+      if (attemptPhase === 'checking-profile' || attemptPhase === 'waiting-for-display-name') return;
 
       setAttemptPhase('checking-profile');
       diagnostics.transitionStep('onboarding-check');
@@ -252,18 +253,22 @@ export default function Signup() {
         }
 
         actorReadyTimeout.reset();
-        setAttemptPhase('redirecting');
         
-        // If profile exists, go to weekly-mountain; otherwise go to onboarding
-        if (userProfile !== null) {
-          diagnostics.transitionStep('navigation', { destination: '/weekly-mountain' });
-          navigate({ to: '/weekly-mountain' });
+        // If profile is null, this is a new account - set the session flag and wait for display name
+        if (userProfile === null) {
+          console.log('[Signup] New account detected, setting flag and waiting for display name modal');
+          setNewAccountFlag();
+          setAttemptPhase('waiting-for-display-name');
+          // Note: Not calling diagnostics.transitionStep here as 'waiting-for-display-name' is not a valid AuthStep
+          // The PostAuthDisplayNameGate will now show the modal
+          // After the modal is closed (save/skip), it will clear the flag and navigate to onboarding
         } else {
-          diagnostics.transitionStep('navigation', { destination: '/onboarding' });
-          navigate({ to: '/onboarding' });
+          // Existing profile - go to weekly-mountain
+          setAttemptPhase('redirecting');
+          diagnostics.transitionStep('navigation', { destination: '/weekly-mountain', newAccount: false });
+          navigate({ to: '/weekly-mountain' });
+          diagnostics.completeAttempt('success', 'Signup flow completed');
         }
-        
-        diagnostics.completeAttempt('success', 'Signup flow completed');
       } catch (err) {
         console.error('Error checking profile:', err);
         setAttemptPhase('error');
@@ -273,7 +278,7 @@ export default function Signup() {
       }
     };
 
-    checkProfileAndRedirect();
+    checkProfileAndSetFlag();
   }, [validatedIdentity, iiIdentity, actor, actorFetching, navigate, attemptPhase, diagnostics, actorReadyTimeout, userProfile, profileLoading, profileFetched, endAttempt]);
 
   // Track login status changes (II only) - ONLY if user initiated auth
@@ -451,6 +456,7 @@ export default function Signup() {
     if (attemptPhase === 'connecting') return 'Connecting...';
     if (attemptPhase === 'validating') return 'Validating...';
     if (attemptPhase === 'checking-profile') return 'Checking...';
+    if (attemptPhase === 'waiting-for-display-name') return 'Please complete setup...';
     if (attemptPhase === 'redirecting') return 'Redirecting...';
     return 'Sign up with Internet Identity';
   };

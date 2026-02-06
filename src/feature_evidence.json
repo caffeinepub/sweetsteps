@@ -1,45 +1,4 @@
 {
   "kind": "feature_evidence_report",
-  "features": [
-    {
-      "featureId": "feature-show-the-display-name-prompt-only-after-a-user-has-successfully-authenticated-and-immediately-before-onboarding-begins-i-e-before-the-first-onboarding-question-the-prompt-must-be-part-of-the-new-user-flow-users-who-have-not-completed-onboarding-yet-and-it-should-not-appear-for-users-who-already-completed-onboarding",
-      "featureTitle": "Show the display-name prompt only after a user has successfully authenticated and immediately before onboarding begins (i.e., before the first onboarding question). The prompt must be part of the new-user flow (users who have not completed onboarding yet), and it should not appear for users who already completed onboarding.",
-      "files": [
-        "frontend/src/components/RootLayout.tsx",
-        "frontend/src/components/auth/PostAuthDisplayNameGate.tsx",
-        "frontend/src/pages/Onboarding.tsx"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0"
-      ],
-      "testIds": [
-        "REQ-1"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-remove-the-non-functional-x-close-button-from-the-display-name-modal-while-keeping-all-other-ui-and-behavior-the-same-validation-save-skip-outside-click-behavior-etc",
-      "featureTitle": "Remove the non-functional “X”/close button from the display-name modal while keeping all other UI and behavior the same (validation, Save, Skip, outside-click behavior, etc.).",
-      "files": [
-        "frontend/src/components/auth/DisplayNamePromptDialog.tsx"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0"
-      ],
-      "testIds": [
-        "REQ-3"
-      ],
-      "confidence": "high"
-    }
-  ]
+  "features": []
 }
