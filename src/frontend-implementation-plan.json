@@ -1,81 +1,77 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "In-app Logout and Delete Account UI flows for Internet Identity testing",
+  "title": "Fix Signup/Login II resume semantics to prevent double invocation and false waiting/error states",
   "requirements": [
     {
-      "id": "REQ-2",
-      "summary": "Add a global in-app Logout action that clears Internet Identity session plus all SweetSteps client-side cached state and routes back to landing/login.",
+      "id": "REQ-1",
+      "summary": "Ensure Signup proceeds immediately to post-auth handling and routes to /onboarding after successful Internet Identity auth (including already-authenticated returns) without showing false waiting/popup-blocked error UI or requiring Retry.",
       "acceptanceCriteria": [
-        "A visible Logout control exists within the app UI (not only on the Internet Identity site).",
-        "Clicking Logout clears the Internet Identity session in the app by calling the existing `useInternetIdentity().clear()` flow.",
-        "Logout also clears SweetSteps client-side persisted state used for onboarding and weekly mountain caching (including `OnboardingResultContext` storage and any `localStorage` keys used by the app such as `sweetsteps_current_week` and `sweetsteps_weekly_mountain`).",
-        "After Logout completes, the user is routed to `/` or `/login`, and authenticated-only pages no longer show authenticated data until the user logs in again."
+        "From a fresh browser session (or after clearing II session), clicking “Sign up with Internet Identity” and completing authentication returns to the app and automatically navigates to /onboarding without showing the popup-blocked help/error state.",
+        "If Internet Identity returns immediately because the user is already authenticated, the Signup page treats this as a successful auth state and continues to /onboarding (no blocking error UI, no second II call required).",
+        "The Signup page does not require a second user action (Retry) to complete routing to /onboarding once the user is authenticated.",
+        "The auth status UI does not remain stuck in “Waiting for authentication…” for an authenticated user."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/utils/sessionReset.ts",
-          "operation": "create",
-          "description": "Add a small session reset utility that clears SweetSteps persisted client state (including onboarding storage key and weekly mountain cache keys like `sweetsteps_current_week` and `sweetsteps_weekly_mountain`)."
+          "path": "frontend/src/pages/Signup.tsx",
+          "operation": "modify",
+          "description": "Update the Signup auth state machine to treat an already-present, valid iiIdentity as success (after a user-initiated attempt), transitioning directly into validating/redirecting without entering popup-waiting or blocked-popup error states; ensure the initial click handler short-circuits to post-auth flow when iiIdentity is already valid to avoid a second II invocation. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/components/AuthenticatedHeader.tsx",
-          "operation": "create",
-          "description": "Create a shared authenticated-page header that includes a visible Logout control wired to `useInternetIdentity().clear()`, clears React Query cache, clears onboarding via `clearOnboardingResult`, runs the session reset utility, and navigates to `/` (or `/login`). Use shadcn-ui components (e.g., Button/Alert) for consistent styling; verify the component's usage instructions before implementing."
+          "path": "frontend/src/components/auth/InternetIdentityAuthorizeCallbackHandler.tsx",
+          "operation": "modify",
+          "description": "Align callback handling behavior with the fixed Signup flow by ensuring the authorize-hash callback remains non-blocking and does not conflict with Signup’s own post-auth transition (e.g., avoid leaving the app in a perceived 'waiting' state when Signup is ready to navigate). Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Make Signup detect and resume a successful authentication across remounts using sessionStorage (sweetsteps_user_initiated_auth) plus a valid iiIdentity, without redirecting users who did not initiate signup in the current visit.",
+      "acceptanceCriteria": [
+        "If the user initiated auth (sweetsteps_user_initiated_auth is set) and a valid Internet Identity is present on page load/return, the Signup page transitions into the validating/redirecting phases automatically and navigates to /onboarding.",
+        "The fix does not introduce automatic redirects for users who did not click Sign up during the current visit (i.e., do not redirect solely because an identity is restored unless the existing user-initiated marker indicates an active attempt)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/Signup.tsx",
+          "operation": "modify",
+          "description": "Add a remount-safe resume guard: on mount (and when iiIdentity/initialization state changes), if sessionStorage indicates sweetsteps_user_initiated_auth and iiIdentity is valid, set the in-memory userInitiatedAuthRef and drive attemptPhase into validating/redirecting (including starting diagnostics state if needed) so the flow completes without requiring Retry. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useAuthAttemptGuard.ts",
+          "operation": "modify",
+          "description": "Expose a small helper (e.g., a read method) to consistently check whether sweetsteps_user_initiated_auth is set for the current visit, so pages can resume post-auth reliably after remount without duplicating sessionStorage key logic. Verify the component's usage instructions before implementing."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Add an in-app Delete Account action that confirms, calls backend deletion capability via authenticated actor, then logs out and resets local state with clear error handling.",
+      "summary": "Update Signup Retry so it completes post-auth flow when already authenticated and only re-attempts Internet Identity login when no valid identity is available.",
       "acceptanceCriteria": [
-        "A visible Delete Account control exists within the app UI and is clearly marked as destructive.",
-        "Delete Account requires explicit user confirmation (e.g., a confirmation dialog) before executing.",
-        "On confirmation, the frontend calls the new backend delete endpoint using the authenticated actor, then clears Internet Identity state (`useInternetIdentity().clear()`), clears onboarding/local cached state, and navigates to `/` or `/login`.",
-        "After Delete Account, logging in again with the same Internet Identity principal results in SweetSteps behaving like a fresh user (e.g., no stored backend profile for that principal and onboarding is required again if the app depends on it).",
-        "If the backend delete call fails, the UI shows a clear English error message and does not falsely report success."
+        "When the user is already authenticated, pressing Retry does not open Internet Identity again and instead immediately proceeds toward /onboarding.",
+        "Retry remains functional for genuinely blocked/failed popups (it can still re-attempt login when there is no authenticated identity available)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/AuthenticatedHeader.tsx",
+          "path": "frontend/src/pages/Signup.tsx",
           "operation": "modify",
-          "description": "Add a clearly destructive Delete Account control with explicit confirmation (e.g., browser confirm or existing dialog composition). On confirm, call `actor.deleteCallerUserData()` via `useActor()` when authenticated, handle failures by rendering a clear English error message, and on success perform the same logout + local reset + navigation sequence as Logout. Use shadcn-ui components (e.g., Button/Alert) where appropriate; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/utils/sessionReset.ts",
-          "operation": "modify",
-          "description": "Ensure the reset helper covers all state that must be cleared for Delete Account (onboarding persisted key plus weekly cache keys) so that post-delete re-login behaves like a fresh user."
+          "description": "Adjust handleRetry to branch based on iiIdentity validity: if a valid iiIdentity exists, skip iiLogin and immediately transition into validation/redirect steps; otherwise perform the existing reset + re-attempt login behavior for blocked/failed popups. Verify the component's usage instructions before implementing."
         }
       ]
     },
     {
       "id": "REQ-4",
-      "summary": "Expose Logout and Delete Account actions from the main authenticated experience across primary routes without modifying immutable UI library files.",
+      "summary": "Apply the same already-authenticated and remount-resume semantics to Login so it never gets stuck in “Waiting for authentication…” or requires Retry when iiIdentity is already available.",
       "acceptanceCriteria": [
-        "Logout/Delete Account controls are accessible without needing to open browser tools (e.g., placed in a header/menu on authenticated pages like Weekly Mountain, Daily, Fridge, and/or Sweet Summit).",
-        "Executing Logout/Delete Account from any of these pages produces the same outcome (session cleared, local state reset, navigation away from authenticated pages).",
-        "No modifications are required to any immutable UI library files under `frontend/src/components/ui`; controls are composed using existing components only."
+        "If the user is already authenticated, clicking “Log in with Internet Identity” does not produce a popup-blocked waiting state; it proceeds to the normal post-auth redirect logic (/weekly-mountain or /onboarding).",
+        "If the user returns from Internet Identity and the page remounts, Login resumes the post-auth flow using the existing identity when sweetsteps_user_initiated_auth is present."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/WeeklyMountain.tsx",
+          "path": "frontend/src/pages/Login.tsx",
           "operation": "modify",
-          "description": "Wire the shared AuthenticatedHeader into Weekly Mountain so Logout/Delete Account are accessible on this primary authenticated page and behave consistently. Use existing composed UI components only; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/Daily.tsx",
-          "operation": "modify",
-          "description": "Wire the shared AuthenticatedHeader into Daily so Logout/Delete Account are accessible on this primary authenticated page and behave consistently. Use existing composed UI components only; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/Fridge.tsx",
-          "operation": "modify",
-          "description": "Wire the shared AuthenticatedHeader into Fridge so Logout/Delete Account are accessible on this primary authenticated page and behave consistently. Use existing composed UI components only; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/SweetSummit.tsx",
-          "operation": "modify",
-          "description": "Wire the shared AuthenticatedHeader into Sweet Summit so Logout/Delete Account are accessible on this primary authenticated page and behave consistently. Use existing composed UI components only; verify the component's usage instructions before implementing."
+          "description": "Add remount-safe resume logic mirroring Signup: if sweetsteps_user_initiated_auth is present and iiIdentity is valid, restore the userInitiatedAuthRef and transition directly into validating/checking-access/redirecting; also short-circuit the main login click handler to post-auth flow when iiIdentity is already valid to avoid a second II invocation and false popup-blocked states. Verify the component's usage instructions before implementing."
         }
       ]
     }

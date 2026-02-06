@@ -1,35 +1,39 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-06T05:56:57.723Z",
-  "summary": "Diff implements canister-side deletion via a new `deleteCallerUserData()` shared method with existing permission checks, and adds an `AuthenticatedHeader` component exposing in-app Logout and Delete Account actions. Logout clears Internet Identity session (`useInternetIdentity().clear()`), clears onboarding/localStorage cache keys via `clearSweetStepsSession()`, clears React Query cache, and navigates to `/`. Delete Account confirms (via AlertDialog components), calls backend deletion, then performs the same clear/reset and navigation; on failure it shows an English error message.",
+  "generatedAt": "2026-02-06T07:00:27.703Z",
+  "summary": "Diff appears to implement remount-safe auth-attempt tracking via sessionStorage and updates Signup/Login flows to resume post-auth handling when an II identity is already present, aiming to prevent the false “Waiting for authentication”/popup-blocked state and double-II invocation. However, the diff also introduces/changes an II authorize callback handler with onboarding/Sweet Summit redirect logic and expands the auth-attempt guard with extra diagnostics features that were not requested.",
   "missing_requirements": [],
   "hallucinated_features": [
     {
-      "description": "Adds a new `/signup-test` route.",
-      "reason": "BuildRequest does not request any new routes; scope is limited to in-app Logout/Delete Account flows.",
+      "description": "Added/modified a global Internet Identity authorize callback handler that parses `#authorize=<principal>` from the URL hash and performs onboarding/Sweet Summit-based redirects (including conditional navigation to `/weekly-mountain`).",
+      "reason": "BuildRequest focuses on fixing Signup/Login remount/already-authenticated semantics and Retry behavior; it does not request adding or changing a separate callback handler or introducing new redirect rules based on Sweet Summit/onboarding completion within that handler.",
       "evidence": [
-        "frontend-file-summaries.txt (\"frontend/src/App.tsx\": \"...including the new /signup-test route.\")"
+        "frontend/src/components/auth/InternetIdentityAuthorizeCallbackHandler.tsx"
       ]
     },
     {
-      "description": "Clears TanStack React Query cache during Logout/Delete Account (`queryClient.clear()`).",
-      "reason": "BuildRequest requires clearing Internet Identity session and specific SweetSteps persisted state (OnboardingResultContext storage and localStorage keys), but does not mention React Query cache management.",
+      "description": "Expanded `useAuthAttemptGuard` to include attempt timestamps, correlation IDs, elapsed-time helpers, and a 'forceReset' recovery API (beyond just using the existing sessionStorage marker to guard/resume flows).",
+      "reason": "REQ-2 specifically asks to use the existing sessionStorage marker plus valid identity to resume the flow; the additional correlation/timing/diagnostic utilities are not explicitly requested.",
       "evidence": [
-        "frontend/src/components/AuthenticatedHeader.tsx"
+        "frontend/src/hooks/useAuthAttemptGuard.ts"
+      ]
+    },
+    {
+      "description": "Documentation-level claim of adding a new `/signup-test` route and various unrelated UI/styling/auth-provider changes (e.g., 'password auth provider removed', global font/theme changes).",
+      "reason": "Non-goals include avoiding auth UI redesign beyond what’s needed for the II flow fix; these items are not requested by REQ-1–REQ-4. Evidence is limited to the repository summary file rather than concrete code diff in this change list.",
+      "evidence": [
+        "frontend-file-summaries.txt"
       ]
     }
   ],
-  "confidence": 0.72,
+  "confidence": 0.62,
   "changed_files": [
-    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/AuthenticatedHeader.tsx",
-    "frontend/src/pages/Daily.tsx",
-    "frontend/src/pages/Fridge.tsx",
-    "frontend/src/pages/SweetSummit.tsx",
-    "frontend/src/pages/WeeklyMountain.tsx",
-    "frontend/src/utils/sessionReset.ts",
+    "frontend/src/components/auth/InternetIdentityAuthorizeCallbackHandler.tsx",
+    "frontend/src/hooks/useAuthAttemptGuard.ts",
+    "frontend/src/pages/Login.tsx",
+    "frontend/src/pages/Signup.tsx",
     "project_state.json"
   ]
 }

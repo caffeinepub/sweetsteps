@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useActor } from '../hooks/useActor';
+import { useGetCallerUserProfile, useSaveCallerUserProfile } from '../hooks/useQueries';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,9 +14,13 @@ import { generateOnboardingPlan, type OnboardingPlanResponse } from '../lib/aiPr
 import { useOnboardingResult } from '../contexts/OnboardingResultContext';
 import { toSafeString } from '../utils/safeRender';
 
+const SWEET_SUMMIT_SEEN_KEY = 'sweetsteps_sweet_summit_seen';
+
 export default function Onboarding() {
   const { identity } = useInternetIdentity();
   const { actor, isFetching: actorFetching } = useActor();
+  const { data: userProfile, isLoading: profileLoading, isFetched: profileFetched } = useGetCallerUserProfile();
+  const saveProfileMutation = useSaveCallerUserProfile();
   const navigate = useNavigate();
   const { onboardingResult, setOnboardingResult, clearOnboardingResult } = useOnboardingResult();
 
@@ -28,17 +33,18 @@ export default function Onboarding() {
   const [planData, setPlanData] = useState<OnboardingPlanResponse | null>(null);
   const [carouselSlide, setCarouselSlide] = useState(0);
 
-  // Check if user has already completed onboarding
+  // Check if user has already completed onboarding (has a profile in backend)
   useEffect(() => {
-    if (onboardingResult) {
-      // User has already completed onboarding, redirect to Weekly Mountain
-      console.log('[Onboarding] User already has onboarding result, redirecting to weekly-mountain');
-      navigate({ to: '/weekly-mountain' });
-    } else {
-      // Clear any stale persisted onboarding result when starting fresh
-      clearOnboardingResult();
+    if (profileLoading || !profileFetched) {
+      return;
     }
-  }, [onboardingResult, navigate, clearOnboardingResult]);
+
+    if (userProfile !== null) {
+      // User has already completed onboarding, redirect to Weekly Mountain
+      console.log('[Onboarding] User already has a profile, redirecting to weekly-mountain');
+      navigate({ to: '/weekly-mountain' });
+    }
+  }, [userProfile, profileLoading, profileFetched, navigate]);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -105,15 +111,24 @@ export default function Onboarding() {
       // Store in context (which persists to localStorage)
       setOnboardingResult(completeResult);
 
-      // Verify the data was stored correctly
-      console.log('[Onboarding] Stored onboarding result:', completeResult);
+      // Save to backend to mark onboarding as complete
+      // We use the user's goal as their name for now
+      await saveProfileMutation.mutateAsync({
+        name: goal,
+        createdAt: BigInt(Date.now() * 1000000), // Convert to nanoseconds
+      });
+
+      // Mark that user has NOT yet seen Sweet Summit (first login)
+      localStorage.setItem(SWEET_SUMMIT_SEEN_KEY, 'false');
+
+      console.log('[Onboarding] Saved profile to backend and stored onboarding result');
 
       // Move to Sweet Summit screen (step 4)
       setCurrentStep(4);
       setCarouselSlide(0);
     } catch (err: any) {
       console.error('Error submitting onboarding:', err);
-      // Surface the error message from the AI proxy client
+      // Surface the error message from the AI proxy client or backend
       setError(err.message || 'Unable to process your onboarding. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -133,11 +148,14 @@ export default function Onboarding() {
   };
 
   const handleStartJourney = () => {
+    console.log('[Onboarding] User clicked Start Your Journey, marking Sweet Summit as seen');
+    // Mark that user has now seen Sweet Summit
+    localStorage.setItem(SWEET_SUMMIT_SEEN_KEY, 'true');
     console.log('[Onboarding] Navigating to Weekly Mountain');
     navigate({ to: '/weekly-mountain' });
   };
 
-  if (!identity) {
+  if (!identity || profileLoading) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6 py-16">
         <div className="flex flex-col items-center gap-4">

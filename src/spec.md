@@ -1,12 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Add in-app Logout and Delete Account flows to support Internet Identity testing by clearing local session/state and optionally deleting the user’s stored backend profile.
+**Goal:** Fix the Internet Identity authentication flow on Signup (and keep Login consistent) to prevent double Internet Identity invocation and the false “Waiting for authentication…” / popup-blocked error when the user is already authenticated or returns from Internet Identity.
 
 **Planned changes:**
-- Backend: add a canister method that deletes the currently authenticated caller’s stored user data (at minimum the `userProfiles` entry keyed by `caller`), handling missing records safely and preserving existing authorization rules.
-- Frontend: add a globally accessible in-app Logout action that calls `useInternetIdentity().clear()`, clears client-side persisted onboarding and weekly mountain cache state (including `OnboardingResultContext` storage and relevant `localStorage` keys), then routes to `/` or `/login`.
-- Frontend: add an in-app Delete Account action (clearly destructive) with confirmation; on confirm, call the new backend delete method via the authenticated actor, then perform the same logout/state reset and navigation; show a clear English error if deletion fails.
-- Ensure Logout/Delete Account controls are reachable from the main authenticated experience (e.g., header/menu on primary authenticated pages) and behave consistently across routes, without modifying immutable UI library files under `frontend/src/components/ui`.
+- Update Signup page auth attempt guards/state so that if `sweetsteps_user_initiated_auth` is set and a valid Internet Identity (`iiIdentity`) is present after return/remount, the page immediately continues post-auth handling and routes to `/onboarding`.
+- Prevent Signup from showing or getting stuck in “Waiting for authentication…” / popup-blocked error UI when authentication has already succeeded (including immediate return because the user is already authenticated).
+- Adjust Signup Retry behavior: if already authenticated, do not trigger a second Internet Identity login; instead complete validation + navigation using the existing identity.
+- Align Login page behavior with the fixed semantics for “already authenticated” and “return-from-II/remount” scenarios so it resumes post-auth flow without requiring Retry or showing a false waiting/error state.
 
-**User-visible outcome:** Signed-in users can log out from within the app to return to the landing/login screen with all local cached state cleared, and can delete their account data (with confirmation) so that the next login behaves like a fresh user; failures to delete are reported clearly.
+**User-visible outcome:** After signing up (or logging in) with Internet Identity, users who successfully authenticate—including those already authenticated—are automatically taken to the appropriate next page (Signup → `/onboarding`; Login → normal redirect) without a false “Waiting for authentication…” error and without needing to press Retry.

@@ -31,7 +31,10 @@ export default function Signup() {
   const [validatedIdentity, setValidatedIdentity] = useState<boolean>(false);
   const [mobileLoginError, setMobileLoginError] = useState<string | null>(null);
   
-  const { isAttempting, startAttempt, endAttempt, getAttemptTimestamp, getElapsedMs, forceReset } = useAuthAttemptGuard();
+  // Track if user has initiated auth in this visit
+  const userInitiatedAuthRef = useRef(false);
+  
+  const { isAttempting, startAttempt, endAttempt, getAttemptTimestamp, getElapsedMs, forceReset, hasUserInitiatedAuth } = useAuthAttemptGuard();
   const stalledState = useStalledAuthDetection(getAttemptTimestamp(), iiLoginStatus, iiIdentity,
     attemptPhase === 'connecting' ? 'ii-popup-open' : 
     attemptPhase === 'validating' ? 'identity-validation' : undefined
@@ -86,6 +89,30 @@ export default function Signup() {
       iiClear();
     }
   }, [iiIdentity, iiClear, attemptPhase]);
+
+  // REMOUNT-SAFE RESUME: Restore userInitiatedAuthRef and resume post-auth flow if returning from II
+  useEffect(() => {
+    // Only run once on mount or when initialization completes
+    if (iiInitializing) return;
+    
+    // Check if user initiated auth in this visit (via sessionStorage)
+    const hasInitiatedAuth = hasUserInitiatedAuth();
+    
+    if (hasInitiatedAuth && iiIdentity && isIdentityValid(iiIdentity)) {
+      console.log('Signup: Detected valid identity with user-initiated auth flag - resuming post-auth flow');
+      
+      // Restore the ref so other effects can proceed
+      userInitiatedAuthRef.current = true;
+      
+      // If we're still in idle phase, transition to validating
+      if (attemptPhase === 'idle') {
+        console.log('Signup: Transitioning from idle to validating after remount');
+        setAttemptPhase('validating');
+        diagnostics.startAttempt();
+        diagnostics.transitionStep('identity-validation', { valid: true, resumed: true });
+      }
+    }
+  }, [iiInitializing, iiIdentity, attemptPhase, hasUserInitiatedAuth, diagnostics]);
 
   // Detect when II popup is closed/canceled via window focus
   useEffect(() => {
@@ -196,10 +223,15 @@ export default function Signup() {
     }
   }, [stalledState.isStalled, attemptPhase, endAttempt, diagnostics, stalledState.stalledReason]);
 
-  // Validate identity when it changes
+  // Validate identity when it changes - ONLY if user initiated auth
   useEffect(() => {
     if (!iiIdentity) {
       setValidatedIdentity(false);
+      return;
+    }
+
+    // CRITICAL: Only validate if user initiated auth in this visit
+    if (!userInitiatedAuthRef.current) {
       return;
     }
 
@@ -215,8 +247,13 @@ export default function Signup() {
     }
   }, [iiIdentity, attemptPhase, diagnostics, validationTimeout]);
 
-  // Redirect authenticated users to onboarding only after validation
+  // Redirect authenticated users to onboarding only after validation - ONLY if user initiated auth
   useEffect(() => {
+    // CRITICAL: Only redirect if user initiated auth in this visit
+    if (!userInitiatedAuthRef.current) {
+      return;
+    }
+
     if (!validatedIdentity || !iiIdentity || !actor) return;
     
     // Don't run if we're already redirecting
@@ -229,8 +266,13 @@ export default function Signup() {
     diagnostics.completeAttempt('success', 'Signup successful');
   }, [validatedIdentity, iiIdentity, actor, navigate, attemptPhase, diagnostics, actorReadyTimeout]);
 
-  // Track login status changes (II only)
+  // Track login status changes (II only) - ONLY if user initiated auth
   useEffect(() => {
+    // CRITICAL: Only process login status if user initiated auth in this visit
+    if (!userInitiatedAuthRef.current) {
+      return;
+    }
+
     if (iiLoginStatus === 'logging-in' && attemptPhase === 'connecting') {
       // Login initiated successfully
       diagnostics.transitionStep('ii-popup-open');
@@ -261,18 +303,36 @@ export default function Signup() {
     }
   }, [iiLoginStatus, attemptPhase, endAttempt, diagnostics, iiLoginError, iiIdentity]);
 
-  // Track actor readiness
+  // Track actor readiness - ONLY if user initiated auth
   useEffect(() => {
+    // CRITICAL: Only track actor if user initiated auth in this visit
+    if (!userInitiatedAuthRef.current) {
+      return;
+    }
+
     if (attemptPhase === 'validating' && validatedIdentity && actor) {
       diagnostics.transitionStep('actor-ready');
     }
   }, [attemptPhase, validatedIdentity, actor, diagnostics]);
 
   const handleIISignup = useCallback(async () => {
+    // SHORT-CIRCUIT: If already authenticated with valid identity, skip II and go straight to post-auth
+    if (iiIdentity && isIdentityValid(iiIdentity)) {
+      console.log('Signup: Already authenticated, skipping II and proceeding to post-auth flow');
+      userInitiatedAuthRef.current = true;
+      setAttemptPhase('validating');
+      diagnostics.startAttempt();
+      diagnostics.transitionStep('identity-validation', { valid: true, alreadyAuthenticated: true });
+      return;
+    }
+    
     // Guard against re-entrancy
     if (!startAttempt()) {
       return;
     }
+    
+    // CRITICAL: Mark that user has initiated auth in this visit
+    userInitiatedAuthRef.current = true;
     
     // Start diagnostics
     diagnostics.startAttempt();
@@ -333,10 +393,24 @@ export default function Signup() {
       // This preserves the user gesture for Chrome's popup requirements
       iiLogin();
     }
-  }, [startAttempt, iiLogin, mobileLogin, endAttempt, diagnostics]);
+  }, [startAttempt, iiLogin, mobileLogin, endAttempt, diagnostics, iiIdentity]);
 
   const handleRetry = useCallback(() => {
-    // Force reset the attempt guard to ensure clean retry
+    // If already authenticated, skip II and complete post-auth flow
+    if (iiIdentity && isIdentityValid(iiIdentity)) {
+      console.log('Signup Retry: Already authenticated, completing post-auth flow');
+      userInitiatedAuthRef.current = true;
+      setAttemptPhase('validating');
+      setMobileLoginError(null);
+      diagnostics.reset();
+      diagnostics.startAttempt();
+      diagnostics.transitionStep('identity-validation', { valid: true, retryWithExistingIdentity: true });
+      validationTimeout.reset();
+      actorReadyTimeout.reset();
+      return;
+    }
+    
+    // Otherwise, force reset and retry II login
     forceReset();
     waitingForIIRef.current = false;
     popupOpenDetectedRef.current = false;
@@ -350,7 +424,7 @@ export default function Signup() {
     setTimeout(() => {
       handleIISignup();
     }, 100);
-  }, [forceReset, handleIISignup, diagnostics, validationTimeout, actorReadyTimeout]);
+  }, [forceReset, handleIISignup, diagnostics, validationTimeout, actorReadyTimeout, iiIdentity]);
 
   const handleReturnToLanding = useCallback(() => {
     navigate({ to: '/' });

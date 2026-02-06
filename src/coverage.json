@@ -1,83 +1,74 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-06T05:56:57.726Z",
+  "generatedAt": "2026-02-06T07:00:27.706Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
     "total": 4,
-    "implemented": 3,
+    "implemented": 4,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Add a backend endpoint that deletes the currently authenticated user’s stored data in the canister so that the next Internet Identity login is treated as a new user by SweetSteps.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "summary": "Fix the Signup Internet Identity flow so that after a successful Internet Identity authentication (including the case where the user returns already authenticated), the Signup page immediately proceeds to post-auth handling and routes to /onboarding without showing the “Waiting for authentication…” / popup-blocked error and without requiring the user to press Retry.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/Signup.tsx",
+          "frontend/src/components/auth/InternetIdentityAuthorizeCallbackHandler.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/Signup.tsx",
+          "frontend/src/components/auth/InternetIdentityAuthorizeCallbackHandler.tsx"
+        ]
       },
       {
         "id": "REQ-2",
-        "summary": "Add a global, in-app Logout action in SweetSteps that clears the app’s authenticated session state and returns the user to the landing or login screen.",
+        "summary": "Update the Signup page’s attempt-state/guards so that successful authentication is detected even if the component remounts or local state/refs reset (e.g., after returning from Internet Identity). Use the existing sessionStorage user-initiated-auth marker (sweetsteps_user_initiated_auth) and the presence of a valid iiIdentity to resume the flow and complete validation/navigation.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/utils/sessionReset.ts",
-          "frontend/src/components/AuthenticatedHeader.tsx"
+          "frontend/src/pages/Signup.tsx",
+          "frontend/src/hooks/useAuthAttemptGuard.ts"
         ],
         "matchedFiles": [
-          "frontend/src/utils/sessionReset.ts",
-          "frontend/src/components/AuthenticatedHeader.tsx"
+          "frontend/src/pages/Signup.tsx",
+          "frontend/src/hooks/useAuthAttemptGuard.ts"
         ]
       },
       {
         "id": "REQ-3",
-        "summary": "Add an in-app Delete Account action in SweetSteps that deletes the user’s backend record and then logs them out and resets all local SweetSteps state.",
+        "summary": "Adjust the Retry behavior on the Signup page so that it does not unnecessarily trigger a second Internet Identity login when the user is already authenticated; instead, it should recover by completing the post-auth flow (validation + navigation) using the existing authenticated identity.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/AuthenticatedHeader.tsx",
-          "frontend/src/utils/sessionReset.ts"
+          "frontend/src/pages/Signup.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/AuthenticatedHeader.tsx",
-          "frontend/src/utils/sessionReset.ts"
+          "frontend/src/pages/Signup.tsx"
         ]
       },
       {
         "id": "REQ-4",
-        "summary": "Ensure the Logout and Delete Account actions are accessible from the main authenticated experience (at minimum on the primary authenticated pages) and behave consistently across routes.",
+        "summary": "Keep the Login page behavior consistent with the fixed Signup semantics for the “already authenticated” and “return-from-II/remount” scenarios, so Login also does not get stuck in “Waiting for authentication…” or require Retry when an authenticated identity is already available.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/WeeklyMountain.tsx",
-          "frontend/src/pages/Daily.tsx",
-          "frontend/src/pages/Fridge.tsx",
-          "frontend/src/pages/SweetSummit.tsx"
+          "frontend/src/pages/Login.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/WeeklyMountain.tsx",
-          "frontend/src/pages/Daily.tsx",
-          "frontend/src/pages/Fridge.tsx",
-          "frontend/src/pages/SweetSummit.tsx"
+          "frontend/src/pages/Login.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
-    "frontend/src/components/AuthenticatedHeader.tsx",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
-    "frontend/src/pages/Daily.tsx",
-    "frontend/src/pages/Fridge.tsx",
-    "frontend/src/pages/SweetSummit.tsx",
-    "frontend/src/pages/WeeklyMountain.tsx",
-    "frontend/src/utils/sessionReset.ts",
+    "frontend/src/components/auth/InternetIdentityAuthorizeCallbackHandler.tsx",
+    "frontend/src/hooks/useAuthAttemptGuard.ts",
+    "frontend/src/pages/Login.tsx",
+    "frontend/src/pages/Signup.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

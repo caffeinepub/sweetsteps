@@ -1,33 +1,43 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "SweetSteps app using Internet Identity authentication; plan to add in-app Logout and Delete Account flows for testing/resetting user state.",
+  "summary": "SweetSteps app: Internet Identity (II)-first signup/login flow has an issue where the first successful authentication isn’t detected by the signup page, causing a false “Waiting for authentication / popup blocked” error and requiring a Retry (effectively calling II twice) before routing to onboarding.",
   "architectural_notes": [
-    "Internet Identity anchor cannot be deleted from within the app; Logout should clear app-local auth/session state only.",
-    "Delete Account should delete the user’s backend/canister record; II anchor remains but app treats next login as new user."
+    "Ensure the signup/login UI listens for and handles the initial II authentication completion (callback/message/state change) and transitions immediately to post-login routing without requiring Retry.",
+    "Add guards to prevent triggering multiple concurrent/duplicate II auth attempts from the signup flow (e.g., idempotent auth state + disable retry until timeout)."
   ],
-  "known_issues": [],
-  "isFixRequest": false,
+  "known_issues": [
+    "After first successful II signup redirect back to SweetSteps, the UI still shows 'Waiting for authentication' / popup blocked error; pressing Retry then proceeds to onboarding (II effectively called twice)."
+  ],
+  "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-add-a-global-in-app-logout-action-in-sweetsteps-that-clears-the-app-s-authenticated-session-state-and-returns-the-user-to-the-landing-or-login-screen",
-      "title": "Add a global, in-app Logout action in SweetSteps that clears the app’s authenticated session state and returns the user to the landing or login screen.",
+      "id": "feature-fix-the-signup-internet-identity-flow-so-that-after-a-successful-internet-identity-authentication-including-the-case-where-the-user-returns-already-authenticated-the-signup-page-immediately-proceeds-to-post-auth-handling-and-routes-to-onboarding-without-showing-the-waiting-for-authentication-popup-blocked-error-and-without-requiring-the-user-to-press-retry",
+      "title": "Fix the Signup Internet Identity flow so that after a successful Internet Identity authentication (including the case where the user returns already authenticated), the Signup page immediately proceeds to post-auth handling and routes to /onboarding without showing the “Waiting for authentication…” / popup-blocked error and without requiring the user to press Retry.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-signup-page-s-attempt-state-guards-so-that-successful-authentication-is-detected-even-if-the-component-remounts-or-local-state-refs-reset-e-g-after-returning-from-internet-identity-use-the-existing-sessionstorage-user-initiated-auth-marker-sweetsteps-user-initiated-auth-and-the-presence-of-a-valid-iiidentity-to-resume-the-flow-and-complete-validation-navigation",
+      "title": "Update the Signup page’s attempt-state/guards so that successful authentication is detected even if the component remounts or local state/refs reset (e.g., after returning from Internet Identity). Use the existing sessionStorage user-initiated-auth marker (sweetsteps_user_initiated_auth) and the presence of a valid iiIdentity to resume the flow and complete validation/navigation.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-add-an-in-app-delete-account-action-in-sweetsteps-that-deletes-the-user-s-backend-record-and-then-logs-them-out-and-resets-all-local-sweetsteps-state",
-      "title": "Add an in-app Delete Account action in SweetSteps that deletes the user’s backend record and then logs them out and resets all local SweetSteps state.",
+      "id": "feature-adjust-the-retry-behavior-on-the-signup-page-so-that-it-does-not-unnecessarily-trigger-a-second-internet-identity-login-when-the-user-is-already-authenticated-instead-it-should-recover-by-completing-the-post-auth-flow-validation-navigation-using-the-existing-authenticated-identity",
+      "title": "Adjust the Retry behavior on the Signup page so that it does not unnecessarily trigger a second Internet Identity login when the user is already authenticated; instead, it should recover by completing the post-auth flow (validation + navigation) using the existing authenticated identity.",
       "reqIds": [
         "REQ-3"
       ],
       "version": 1
     },
     {
-      "id": "feature-ensure-the-logout-and-delete-account-actions-are-accessible-from-the-main-authenticated-experience-at-minimum-on-the-primary-authenticated-pages-and-behave-consistently-across-routes",
-      "title": "Ensure the Logout and Delete Account actions are accessible from the main authenticated experience (at minimum on the primary authenticated pages) and behave consistently across routes.",
+      "id": "feature-keep-the-login-page-behavior-consistent-with-the-fixed-signup-semantics-for-the-already-authenticated-and-return-from-ii-remount-scenarios-so-login-also-does-not-get-stuck-in-waiting-for-authentication-or-require-retry-when-an-authenticated-identity-is-already-available",
+      "title": "Keep the Login page behavior consistent with the fixed Signup semantics for the “already authenticated” and “return-from-II/remount” scenarios, so Login also does not get stuck in “Waiting for authentication…” or require Retry when an authenticated identity is already available.",
       "reqIds": [
         "REQ-4"
       ],
@@ -37,22 +47,8 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Add in-app Logout button to clear SweetSteps auth/local session state and return user to landing/login",
+      "summary": "Fix double Internet Identity call / signup page not detecting first successful auth callback (false waiting/popup-blocked error; Retry then routes to onboarding).",
       "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Add in-app Delete Account button to remove the user record from the backend so next login is treated as a new user",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Add a backend endpoint that deletes the currently authenticated user’s stored data in the canister so that the next Internet Identity login is treated as a new user by SweetSteps.",
-      "reqIds": [
-        "REQ-1"
-      ],
       "status": "pending"
     }
   ],

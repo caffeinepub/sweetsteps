@@ -2,11 +2,31 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-add-a-global-in-app-logout-action-in-sweetsteps-that-clears-the-app-s-authenticated-session-state-and-returns-the-user-to-the-landing-or-login-screen",
-      "featureTitle": "Add a global, in-app Logout action in SweetSteps that clears the app’s authenticated session state and returns the user to the landing or login screen.",
+      "featureId": "feature-fix-the-signup-internet-identity-flow-so-that-after-a-successful-internet-identity-authentication-including-the-case-where-the-user-returns-already-authenticated-the-signup-page-immediately-proceeds-to-post-auth-handling-and-routes-to-onboarding-without-showing-the-waiting-for-authentication-popup-blocked-error-and-without-requiring-the-user-to-press-retry",
+      "featureTitle": "Fix the Signup Internet Identity flow so that after a successful Internet Identity authentication (including the case where the user returns already authenticated), the Signup page immediately proceeds to post-auth handling and routes to /onboarding without showing the “Waiting for authentication…” / popup-blocked error and without requiring the user to press Retry.",
       "files": [
-        "frontend/src/components/AuthenticatedHeader.tsx",
-        "frontend/src/utils/sessionReset.ts"
+        "frontend/src/components/auth/InternetIdentityAuthorizeCallbackHandler.tsx",
+        "frontend/src/pages/Signup.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-the-signup-page-s-attempt-state-guards-so-that-successful-authentication-is-detected-even-if-the-component-remounts-or-local-state-refs-reset-e-g-after-returning-from-internet-identity-use-the-existing-sessionstorage-user-initiated-auth-marker-sweetsteps-user-initiated-auth-and-the-presence-of-a-valid-iiidentity-to-resume-the-flow-and-complete-validation-navigation",
+      "featureTitle": "Update the Signup page’s attempt-state/guards so that successful authentication is detected even if the component remounts or local state/refs reset (e.g., after returning from Internet Identity). Use the existing sessionStorage user-initiated-auth marker (sweetsteps_user_initiated_auth) and the presence of a valid iiIdentity to resume the flow and complete validation/navigation.",
+      "files": [
+        "frontend/src/hooks/useAuthAttemptGuard.ts",
+        "frontend/src/pages/Signup.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -22,11 +42,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-an-in-app-delete-account-action-in-sweetsteps-that-deletes-the-user-s-backend-record-and-then-logs-them-out-and-resets-all-local-sweetsteps-state",
-      "featureTitle": "Add an in-app Delete Account action in SweetSteps that deletes the user’s backend record and then logs them out and resets all local SweetSteps state.",
+      "featureId": "feature-adjust-the-retry-behavior-on-the-signup-page-so-that-it-does-not-unnecessarily-trigger-a-second-internet-identity-login-when-the-user-is-already-authenticated-instead-it-should-recover-by-completing-the-post-auth-flow-validation-navigation-using-the-existing-authenticated-identity",
+      "featureTitle": "Adjust the Retry behavior on the Signup page so that it does not unnecessarily trigger a second Internet Identity login when the user is already authenticated; instead, it should recover by completing the post-auth flow (validation + navigation) using the existing authenticated identity.",
       "files": [
-        "frontend/src/components/AuthenticatedHeader.tsx",
-        "frontend/src/utils/sessionReset.ts"
+        "frontend/src/pages/Signup.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -42,13 +61,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-ensure-the-logout-and-delete-account-actions-are-accessible-from-the-main-authenticated-experience-at-minimum-on-the-primary-authenticated-pages-and-behave-consistently-across-routes",
-      "featureTitle": "Ensure the Logout and Delete Account actions are accessible from the main authenticated experience (at minimum on the primary authenticated pages) and behave consistently across routes.",
+      "featureId": "feature-keep-the-login-page-behavior-consistent-with-the-fixed-signup-semantics-for-the-already-authenticated-and-return-from-ii-remount-scenarios-so-login-also-does-not-get-stuck-in-waiting-for-authentication-or-require-retry-when-an-authenticated-identity-is-already-available",
+      "featureTitle": "Keep the Login page behavior consistent with the fixed Signup semantics for the “already authenticated” and “return-from-II/remount” scenarios, so Login also does not get stuck in “Waiting for authentication…” or require Retry when an authenticated identity is already available.",
       "files": [
-        "frontend/src/pages/Daily.tsx",
-        "frontend/src/pages/Fridge.tsx",
-        "frontend/src/pages/SweetSummit.tsx",
-        "frontend/src/pages/WeeklyMountain.tsx"
+        "frontend/src/pages/Login.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",

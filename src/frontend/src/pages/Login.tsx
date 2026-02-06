@@ -2,13 +2,13 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useActor } from '../hooks/useActor';
+import { useGetCallerUserProfile } from '../hooks/useQueries';
 import { useAuthAttemptGuard } from '../hooks/useAuthAttemptGuard';
 import { useStalledAuthDetection } from '../hooks/useStalledAuthDetection';
 import { useMobileInternetIdentityLoginPatched } from '../hooks/useMobileInternetIdentityLoginPatched';
 import { useAuthFlowDiagnostics } from '../hooks/useAuthFlowDiagnostics';
 import { useCanisterWarmup } from '../hooks/useCanisterWarmup';
 import { usePostAuthTimeout } from '../hooks/usePostAuthTimeout';
-import { useOnboardingResult } from '../contexts/OnboardingResultContext';
 import { isIdentityValid, isSessionStale } from '../utils/identityValidation';
 import { getPlatformInfo, isChromeAndroid } from '../utils/platform';
 import { Button } from '@/components/ui/button';
@@ -26,7 +26,7 @@ type AttemptPhase = 'idle' | 'connecting' | 'validating' | 'checking-access' | '
 export default function Login() {
   const { login: iiLogin, clear: iiClear, loginError: iiLoginError, identity: iiIdentity, loginStatus: iiLoginStatus, isInitializing: iiInitializing } = useInternetIdentity();
   const { actor, isFetching: actorFetching } = useActor();
-  const { onboardingResult } = useOnboardingResult();
+  const { data: userProfile, isLoading: profileLoading, isFetched: profileFetched } = useGetCallerUserProfile();
   const navigate = useNavigate();
   
   const [attemptPhase, setAttemptPhase] = useState<AttemptPhase>('idle');
@@ -34,7 +34,10 @@ export default function Login() {
   const [onboardingCheckError, setOnboardingCheckError] = useState<string | null>(null);
   const [mobileLoginError, setMobileLoginError] = useState<string | null>(null);
   
-  const { isAttempting, startAttempt, endAttempt, getAttemptTimestamp, getElapsedMs, forceReset } = useAuthAttemptGuard();
+  // Track if user has initiated auth in this visit
+  const userInitiatedAuthRef = useRef(false);
+  
+  const { isAttempting, startAttempt, endAttempt, getAttemptTimestamp, getElapsedMs, forceReset, hasUserInitiatedAuth } = useAuthAttemptGuard();
   const stalledState = useStalledAuthDetection(getAttemptTimestamp(), iiLoginStatus, iiIdentity, 
     attemptPhase === 'connecting' ? 'ii-popup-open' : 
     attemptPhase === 'validating' ? 'identity-validation' :
@@ -102,6 +105,30 @@ export default function Login() {
       iiClear();
     }
   }, [iiIdentity, iiClear, attemptPhase]);
+
+  // REMOUNT-SAFE RESUME: Restore userInitiatedAuthRef and resume post-auth flow if returning from II
+  useEffect(() => {
+    // Only run once on mount or when initialization completes
+    if (iiInitializing) return;
+    
+    // Check if user initiated auth in this visit (via sessionStorage)
+    const hasInitiatedAuth = hasUserInitiatedAuth();
+    
+    if (hasInitiatedAuth && iiIdentity && isIdentityValid(iiIdentity)) {
+      console.log('Login: Detected valid identity with user-initiated auth flag - resuming post-auth flow');
+      
+      // Restore the ref so other effects can proceed
+      userInitiatedAuthRef.current = true;
+      
+      // If we're still in idle phase, transition to validating
+      if (attemptPhase === 'idle') {
+        console.log('Login: Transitioning from idle to validating after remount');
+        setAttemptPhase('validating');
+        diagnostics.startAttempt();
+        diagnostics.transitionStep('identity-validation', { valid: true, resumed: true });
+      }
+    }
+  }, [iiInitializing, iiIdentity, attemptPhase, hasUserInitiatedAuth, diagnostics]);
 
   // Detect when II popup is closed/canceled via window focus
   useEffect(() => {
@@ -212,10 +239,15 @@ export default function Login() {
     }
   }, [stalledState.isStalled, attemptPhase, endAttempt, diagnostics, stalledState.stalledReason]);
 
-  // Validate identity when it changes
+  // Validate identity when it changes - ONLY if user initiated auth
   useEffect(() => {
     if (!iiIdentity) {
       setValidatedIdentity(false);
+      return;
+    }
+
+    // CRITICAL: Only validate if user initiated auth in this visit
+    if (!userInitiatedAuthRef.current) {
       return;
     }
 
@@ -231,9 +263,14 @@ export default function Login() {
     }
   }, [iiIdentity, attemptPhase, diagnostics, validationTimeout]);
 
-  // Check onboarding status and redirect only after validation
+  // Check onboarding status and redirect only after validation - ONLY if user initiated auth
   useEffect(() => {
     const checkAndRedirect = async () => {
+      // CRITICAL: Only proceed if user initiated auth in this visit
+      if (!userInitiatedAuthRef.current) {
+        return;
+      }
+
       // Only proceed if we have a validated identity and actor is ready
       if (!validatedIdentity || !iiIdentity || !actor || actorFetching) return;
       
@@ -245,13 +282,19 @@ export default function Login() {
       diagnostics.transitionStep('onboarding-check');
       
       try {
-        // Check onboarding status from localStorage
-        const hasOnboardingResult = !!onboardingResult;
+        // Wait for profile to be fetched
+        if (profileLoading || !profileFetched) {
+          return;
+        }
+
+        // Check if user has completed onboarding (has a profile)
+        const hasCompletedOnboarding = userProfile !== null;
+        
         onboardingCheckTimeout.reset();
         setAttemptPhase('redirecting');
-        diagnostics.transitionStep('navigation', { destination: hasOnboardingResult ? '/weekly-mountain' : '/onboarding' });
+        diagnostics.transitionStep('navigation', { destination: hasCompletedOnboarding ? '/weekly-mountain' : '/onboarding' });
         
-        if (hasOnboardingResult) {
+        if (hasCompletedOnboarding) {
           // User has completed onboarding
           navigate({ to: '/weekly-mountain' });
         } else {
@@ -273,10 +316,15 @@ export default function Login() {
     };
 
     checkAndRedirect();
-  }, [validatedIdentity, iiIdentity, actor, actorFetching, navigate, attemptPhase, endAttempt, diagnostics, onboardingCheckTimeout, onboardingResult]);
+  }, [validatedIdentity, iiIdentity, actor, actorFetching, navigate, attemptPhase, endAttempt, diagnostics, onboardingCheckTimeout, userProfile, profileLoading, profileFetched]);
 
-  // Track login status changes (II only)
+  // Track login status changes (II only) - ONLY if user initiated auth
   useEffect(() => {
+    // CRITICAL: Only process login status if user initiated auth in this visit
+    if (!userInitiatedAuthRef.current) {
+      return;
+    }
+
     if (iiLoginStatus === 'logging-in' && attemptPhase === 'connecting') {
       // Login initiated successfully
       diagnostics.transitionStep('ii-popup-open');
@@ -307,8 +355,13 @@ export default function Login() {
     }
   }, [iiLoginStatus, attemptPhase, endAttempt, diagnostics, iiLoginError, iiIdentity]);
 
-  // Track actor readiness
+  // Track actor readiness - ONLY if user initiated auth
   useEffect(() => {
+    // CRITICAL: Only track actor if user initiated auth in this visit
+    if (!userInitiatedAuthRef.current) {
+      return;
+    }
+
     if (attemptPhase === 'validating' && validatedIdentity && actor && !actorFetching) {
       diagnostics.transitionStep('actor-ready');
       actorReadyTimeout.reset();
@@ -316,10 +369,23 @@ export default function Login() {
   }, [attemptPhase, validatedIdentity, actor, actorFetching, diagnostics, actorReadyTimeout]);
 
   const handleIILogin = useCallback(async () => {
+    // SHORT-CIRCUIT: If already authenticated with valid identity, skip II and go straight to post-auth
+    if (iiIdentity && isIdentityValid(iiIdentity)) {
+      console.log('Login: Already authenticated, skipping II and proceeding to post-auth flow');
+      userInitiatedAuthRef.current = true;
+      setAttemptPhase('validating');
+      diagnostics.startAttempt();
+      diagnostics.transitionStep('identity-validation', { valid: true, alreadyAuthenticated: true });
+      return;
+    }
+    
     // Guard against re-entrancy
     if (!startAttempt()) {
       return;
     }
+    
+    // CRITICAL: Mark that user has initiated auth in this visit
+    userInitiatedAuthRef.current = true;
     
     // Start diagnostics
     diagnostics.startAttempt();
@@ -381,7 +447,7 @@ export default function Login() {
       // This preserves the user gesture for Chrome's popup requirements
       iiLogin();
     }
-  }, [startAttempt, iiLogin, mobileLogin, endAttempt, diagnostics]);
+  }, [startAttempt, iiLogin, mobileLogin, endAttempt, diagnostics, iiIdentity]);
 
   const handleRetryOnboardingCheck = useCallback(() => {
     setOnboardingCheckError(null);
@@ -390,28 +456,44 @@ export default function Login() {
     diagnostics.reset();
     onboardingCheckTimeout.reset();
     
-    if (iiIdentity && actor && !actorFetching) {
+    if (iiIdentity && actor && !actorFetching && profileFetched) {
       setAttemptPhase('checking-access');
       diagnostics.startAttempt();
       diagnostics.transitionStep('onboarding-check');
       
-      // Check onboarding status from localStorage
-      const hasOnboardingResult = !!onboardingResult;
+      // Check if user has completed onboarding (has a profile)
+      const hasCompletedOnboarding = userProfile !== null;
       onboardingCheckTimeout.reset();
       setAttemptPhase('redirecting');
-      diagnostics.transitionStep('navigation', { destination: hasOnboardingResult ? '/weekly-mountain' : '/onboarding' });
+      diagnostics.transitionStep('navigation', { destination: hasCompletedOnboarding ? '/weekly-mountain' : '/onboarding' });
       
-      if (hasOnboardingResult) {
+      if (hasCompletedOnboarding) {
         navigate({ to: '/weekly-mountain' });
       } else {
         navigate({ to: '/onboarding' });
       }
       diagnostics.completeAttempt('success', 'Retry successful');
     }
-  }, [iiIdentity, actor, actorFetching, navigate, diagnostics, onboardingCheckTimeout, onboardingResult]);
+  }, [iiIdentity, actor, actorFetching, navigate, diagnostics, onboardingCheckTimeout, userProfile, profileFetched]);
 
   const handleRetry = useCallback(() => {
-    // Force reset the attempt guard to ensure clean retry
+    // If already authenticated, skip II and complete post-auth flow
+    if (iiIdentity && isIdentityValid(iiIdentity)) {
+      console.log('Login Retry: Already authenticated, completing post-auth flow');
+      userInitiatedAuthRef.current = true;
+      setAttemptPhase('validating');
+      setMobileLoginError(null);
+      setOnboardingCheckError(null);
+      diagnostics.reset();
+      diagnostics.startAttempt();
+      diagnostics.transitionStep('identity-validation', { valid: true, retryWithExistingIdentity: true });
+      validationTimeout.reset();
+      actorReadyTimeout.reset();
+      onboardingCheckTimeout.reset();
+      return;
+    }
+    
+    // Otherwise, force reset and retry II login
     forceReset();
     waitingForIIRef.current = false;
     popupOpenDetectedRef.current = false;
@@ -427,7 +509,7 @@ export default function Login() {
     setTimeout(() => {
       handleIILogin();
     }, 100);
-  }, [forceReset, handleIILogin, diagnostics, validationTimeout, actorReadyTimeout, onboardingCheckTimeout]);
+  }, [forceReset, handleIILogin, diagnostics, validationTimeout, actorReadyTimeout, onboardingCheckTimeout, iiIdentity]);
 
   const handleReturnToLanding = useCallback(() => {
     navigate({ to: '/' });
