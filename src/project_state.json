@@ -1,31 +1,22 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "SweetSteps: a dark, chocolate-themed habit-building app featuring a “Why SweetSteps” carousel and other onboarding UI.",
-  "architectural_notes": [],
-  "known_issues": [
-    "Text gets cut off in the selected inner card in the 'Why SweetSteps' carousel (needs height/spacing adjustment)"
+  "summary": "Implement an Internet Identity (II) auth flow where clicking Login/Signup first clears any existing delegation to force a fresh II session (account chooser when applicable), then routes users to Onboarding or Weekly Mountain based on onboarding completion.",
+  "architectural_notes": [
+    "Internet Identity cannot be forced to always show the account chooser; best workaround is to clear local delegation before starting the II auth flow."
   ],
-  "isFixRequest": true,
-  "existing_features": [
-    {
-      "id": "feature-in-the-why-sweetsteps-modal-carousel-on-the-landing-page-increase-the-rendered-height-of-the-specific-selected-element-xpath-html-1-body-1-div-1-div-1-div-1-div-1-div-2-div-1-div-1-div-1-so-that-the-feature-description-text-is-not-cut-off-apply-the-change-only-to-the-element-corresponding-to-that-xpath-e-g-by-adjusting-that-element-s-tailwind-height-min-height-padding-overflow-behavior-and-do-not-modify-surrounding-carousel-layout-styling-beyond-what-is-strictly-necessary",
-      "title": "In the “Why SweetSteps?” modal carousel on the Landing page, increase the rendered height of the specific selected element (XPath: /html[1]/body[1]/div[1]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]) so that the feature description text is not cut off. Apply the change ONLY to the element corresponding to that XPath (e.g., by adjusting that element’s Tailwind height/min-height/padding/overflow behavior) and do not modify surrounding carousel layout/styling beyond what is strictly necessary.",
-      "reqIds": [
-        "REQ-1"
-      ],
-      "version": 1
-    }
-  ],
+  "known_issues": [],
+  "isFixRequest": false,
+  "existing_features": [],
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Increase height of the selected inner card in the 'Why SweetSteps' carousel so text is not cut off",
+      "summary": "On Login/Signup with Internet Identity: clear existing delegation first, then start fresh II auth and route to Onboarding (new/incomplete) or Weekly Mountain (completed).",
       "reqIds": [],
       "status": "pending"
     }
   ],
-  "projectName": "SweetSteps",
+  "projectName": "Untitled request",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

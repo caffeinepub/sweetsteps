@@ -1,41 +1,10 @@
 {
   "kind": "build_request",
-  "title": "Increase height of selected inner card in 'Why SweetSteps' carousel to prevent text clipping",
+  "title": "Untitled request",
   "priority": "normal",
-  "requirements": [
-    {
-      "id": "REQ-1",
-      "text": "In the “Why SweetSteps?” modal carousel on the Landing page, increase the rendered height of the specific selected element (XPath: /html[1]/body[1]/div[1]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]) so that the feature description text is not cut off. Apply the change ONLY to the element corresponding to that XPath (e.g., by adjusting that element’s Tailwind height/min-height/padding/overflow behavior) and do not modify surrounding carousel layout/styling beyond what is strictly necessary.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-16",
-          "msg-17",
-          "msg-18"
-        ],
-        "quotes": [
-          "In the Why SweetSteps carousel, can you please increase the height of this inner card, as some text is getting cut off",
-          "Please go ahead",
-          "/html[1]/body[1]/div[1]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]"
-        ]
-      },
-      "acceptanceCriteria": [
-        "When opening “Why SweetSteps?” on the Landing page and navigating through all carousel slides, no slide’s title or description text is visually clipped/cut off.",
-        "The selected element is visibly taller than before and provides enough vertical space for the longest description at common breakpoints (mobile and desktop).",
-        "No unexpected scrollbars appear inside the card/selected element as a result of the height change.",
-        "Carousel navigation (Previous/Next buttons, dot indicators, slide transitions) continues to work and looks unchanged aside from the increased height of the selected element.",
-        "Only the element corresponding to the provided XPath has its styling adjusted; other components and pages remain unchanged."
-      ]
-    }
-  ],
-  "constraints": [
-    "Frontend changes must be limited to the single element identified by XPath /html[1]/body[1]/div[1]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1].",
-    "Do not edit any files under frontend/src/components/ui (read-only shadcn components)."
-  ],
-  "nonGoals": [
-    "Do not redesign the carousel or change copy/content of the slides.",
-    "Do not add new features or backend changes for this request."
-  ],
+  "requirements": [],
+  "constraints": [],
+  "nonGoals": [],
   "imageRequirements": {
     "required": [],
     "edits": []

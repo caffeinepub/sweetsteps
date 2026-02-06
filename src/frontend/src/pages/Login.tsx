@@ -379,6 +379,7 @@ export default function Login() {
       // Use standard desktop login path
       // Call login() immediately with no awaits or timers before it
       // This preserves the user gesture for Chrome's popup requirements
+      // Note: login() now internally clears any existing delegation first
       iiLogin();
     }
   }, [startAttempt, iiLogin, mobileLogin, endAttempt, diagnostics]);

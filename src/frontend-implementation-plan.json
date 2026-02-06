@@ -1,25 +1,6 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix text clipping in “Why SweetSteps?” modal carousel by increasing selected container height",
-  "requirements": [
-    {
-      "id": "REQ-1",
-      "summary": "Increase the rendered height of the specific selected carousel element on the Landing page “Why SweetSteps?” modal so slide text is not clipped, without affecting surrounding carousel styling.",
-      "acceptanceCriteria": [
-        "When opening “Why SweetSteps?” on the Landing page and navigating through all carousel slides, no slide’s title or description text is visually clipped/cut off.",
-        "The selected element is visibly taller than before and provides enough vertical space for the longest description at common breakpoints (mobile and desktop).",
-        "No unexpected scrollbars appear inside the card/selected element as a result of the height change.",
-        "Carousel navigation (Previous/Next buttons, dot indicators, slide transitions) continues to work and looks unchanged aside from the increased height of the selected element.",
-        "Only the element corresponding to the provided XPath has its styling adjusted; other components and pages remain unchanged."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/Landing.tsx",
-          "operation": "modify",
-          "description": "Adjust only the carousel’s inner container div that matches the provided XPath (the element currently using Tailwind classes including \"relative overflow-hidden min-h-[280px] md:min-h-[240px]\") by increasing its Tailwind min-height values enough to prevent feature description clipping at mobile/desktop breakpoints, while keeping carousel behavior and surrounding layout unchanged."
-        }
-      ]
-    }
-  ]
+  "title": "Untitled request",
+  "requirements": []
 }
