@@ -2,12 +2,14 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useActor } from '../hooks/useActor';
+import { useGetCallerUserProfile } from '../hooks/useQueries';
 import { useAuthAttemptGuard } from '../hooks/useAuthAttemptGuard';
 import { useStalledAuthDetection } from '../hooks/useStalledAuthDetection';
 import { useMobileInternetIdentityLoginPatched } from '../hooks/useMobileInternetIdentityLoginPatched';
 import { useAuthFlowDiagnostics } from '../hooks/useAuthFlowDiagnostics';
 import { useCanisterWarmup } from '../hooks/useCanisterWarmup';
 import { usePostAuthTimeout } from '../hooks/usePostAuthTimeout';
+import { useAuthPageAutoredirect } from '../hooks/useAuthPageAutoredirect';
 import { isIdentityValid, isSessionStale } from '../utils/identityValidation';
 import { getPlatformInfo, isChromeAndroid } from '../utils/platform';
 import { Button } from '@/components/ui/button';
@@ -20,11 +22,12 @@ import { AuthStatusBanner } from '../components/auth/AuthStatusBanner';
 import { CanisterWarmupBanner } from '../components/auth/CanisterWarmupBanner';
 import { getUrlParameter } from '../utils/urlParams';
 
-type AttemptPhase = 'idle' | 'connecting' | 'validating' | 'redirecting' | 'error';
+type AttemptPhase = 'idle' | 'connecting' | 'validating' | 'checking-profile' | 'redirecting' | 'error';
 
 export default function Signup() {
   const { login: iiLogin, clear: iiClear, loginError: iiLoginError, identity: iiIdentity, loginStatus: iiLoginStatus, isInitializing: iiInitializing } = useInternetIdentity();
-  const { actor } = useActor();
+  const { actor, isFetching: actorFetching } = useActor();
+  const { data: userProfile, isLoading: profileLoading, isFetched: profileFetched } = useGetCallerUserProfile();
   const navigate = useNavigate();
   
   const [attemptPhase, setAttemptPhase] = useState<AttemptPhase>('idle');
@@ -59,6 +62,9 @@ export default function Signup() {
   const debugAuth = getUrlParameter('debugAuth') === '1';
   const platformInfo = getPlatformInfo();
 
+  // Auto-redirect if already authenticated
+  const { isRedirecting } = useAuthPageAutoredirect();
+
   // Post-auth timeout for validation phase
   const validationTimeout = usePostAuthTimeout({
     phase: attemptPhase === 'validating' ? 'validation' : null,
@@ -89,30 +95,6 @@ export default function Signup() {
       iiClear();
     }
   }, [iiIdentity, iiClear, attemptPhase]);
-
-  // REMOUNT-SAFE RESUME: Restore userInitiatedAuthRef and resume post-auth flow if returning from II
-  useEffect(() => {
-    // Only run once on mount or when initialization completes
-    if (iiInitializing) return;
-    
-    // Check if user initiated auth in this visit (via sessionStorage)
-    const hasInitiatedAuth = hasUserInitiatedAuth();
-    
-    if (hasInitiatedAuth && iiIdentity && isIdentityValid(iiIdentity)) {
-      console.log('Signup: Detected valid identity with user-initiated auth flag - resuming post-auth flow');
-      
-      // Restore the ref so other effects can proceed
-      userInitiatedAuthRef.current = true;
-      
-      // If we're still in idle phase, transition to validating
-      if (attemptPhase === 'idle') {
-        console.log('Signup: Transitioning from idle to validating after remount');
-        setAttemptPhase('validating');
-        diagnostics.startAttempt();
-        diagnostics.transitionStep('identity-validation', { valid: true, resumed: true });
-      }
-    }
-  }, [iiInitializing, iiIdentity, attemptPhase, hasUserInitiatedAuth, diagnostics]);
 
   // Detect when II popup is closed/canceled via window focus
   useEffect(() => {
@@ -247,24 +229,52 @@ export default function Signup() {
     }
   }, [iiIdentity, attemptPhase, diagnostics, validationTimeout]);
 
-  // Redirect authenticated users to onboarding only after validation - ONLY if user initiated auth
+  // Check profile and redirect after validation - ONLY if user initiated auth
   useEffect(() => {
-    // CRITICAL: Only redirect if user initiated auth in this visit
-    if (!userInitiatedAuthRef.current) {
-      return;
-    }
+    const checkProfileAndRedirect = async () => {
+      // CRITICAL: Only proceed if user initiated auth in this visit
+      if (!userInitiatedAuthRef.current) {
+        return;
+      }
 
-    if (!validatedIdentity || !iiIdentity || !actor) return;
-    
-    // Don't run if we're already redirecting
-    if (attemptPhase === 'redirecting') return;
+      if (!validatedIdentity || !iiIdentity || !actor || actorFetching) return;
+      
+      // Don't run if we're already checking or redirecting
+      if (attemptPhase === 'checking-profile' || attemptPhase === 'redirecting') return;
 
-    actorReadyTimeout.reset();
-    setAttemptPhase('redirecting');
-    diagnostics.transitionStep('navigation', { destination: '/onboarding' });
-    navigate({ to: '/onboarding' });
-    diagnostics.completeAttempt('success', 'Signup successful');
-  }, [validatedIdentity, iiIdentity, actor, navigate, attemptPhase, diagnostics, actorReadyTimeout]);
+      setAttemptPhase('checking-profile');
+      diagnostics.transitionStep('onboarding-check');
+      
+      try {
+        // Wait for profile to be fetched
+        if (profileLoading || !profileFetched) {
+          return;
+        }
+
+        actorReadyTimeout.reset();
+        setAttemptPhase('redirecting');
+        
+        // If profile exists, go to weekly-mountain; otherwise go to onboarding
+        if (userProfile !== null) {
+          diagnostics.transitionStep('navigation', { destination: '/weekly-mountain' });
+          navigate({ to: '/weekly-mountain' });
+        } else {
+          diagnostics.transitionStep('navigation', { destination: '/onboarding' });
+          navigate({ to: '/onboarding' });
+        }
+        
+        diagnostics.completeAttempt('success', 'Signup flow completed');
+      } catch (err) {
+        console.error('Error checking profile:', err);
+        setAttemptPhase('error');
+        setMobileLoginError('Failed to check account status. Please try again.');
+        endAttempt();
+        diagnostics.completeAttempt('error', 'Profile check failed');
+      }
+    };
+
+    checkProfileAndRedirect();
+  }, [validatedIdentity, iiIdentity, actor, actorFetching, navigate, attemptPhase, diagnostics, actorReadyTimeout, userProfile, profileLoading, profileFetched, endAttempt]);
 
   // Track login status changes (II only) - ONLY if user initiated auth
   useEffect(() => {
@@ -316,16 +326,6 @@ export default function Signup() {
   }, [attemptPhase, validatedIdentity, actor, diagnostics]);
 
   const handleIISignup = useCallback(async () => {
-    // SHORT-CIRCUIT: If already authenticated with valid identity, skip II and go straight to post-auth
-    if (iiIdentity && isIdentityValid(iiIdentity)) {
-      console.log('Signup: Already authenticated, skipping II and proceeding to post-auth flow');
-      userInitiatedAuthRef.current = true;
-      setAttemptPhase('validating');
-      diagnostics.startAttempt();
-      diagnostics.transitionStep('identity-validation', { valid: true, alreadyAuthenticated: true });
-      return;
-    }
-    
     // Guard against re-entrancy
     if (!startAttempt()) {
       return;
@@ -393,24 +393,10 @@ export default function Signup() {
       // This preserves the user gesture for Chrome's popup requirements
       iiLogin();
     }
-  }, [startAttempt, iiLogin, mobileLogin, endAttempt, diagnostics, iiIdentity]);
+  }, [startAttempt, iiLogin, mobileLogin, endAttempt, diagnostics]);
 
   const handleRetry = useCallback(() => {
-    // If already authenticated, skip II and complete post-auth flow
-    if (iiIdentity && isIdentityValid(iiIdentity)) {
-      console.log('Signup Retry: Already authenticated, completing post-auth flow');
-      userInitiatedAuthRef.current = true;
-      setAttemptPhase('validating');
-      setMobileLoginError(null);
-      diagnostics.reset();
-      diagnostics.startAttempt();
-      diagnostics.transitionStep('identity-validation', { valid: true, retryWithExistingIdentity: true });
-      validationTimeout.reset();
-      actorReadyTimeout.reset();
-      return;
-    }
-    
-    // Otherwise, force reset and retry II login
+    // Force reset and retry II login
     forceReset();
     waitingForIIRef.current = false;
     popupOpenDetectedRef.current = false;
@@ -424,7 +410,7 @@ export default function Signup() {
     setTimeout(() => {
       handleIISignup();
     }, 100);
-  }, [forceReset, handleIISignup, diagnostics, validationTimeout, actorReadyTimeout, iiIdentity]);
+  }, [forceReset, handleIISignup, diagnostics, validationTimeout, actorReadyTimeout]);
 
   const handleReturnToLanding = useCallback(() => {
     navigate({ to: '/' });
@@ -436,7 +422,7 @@ export default function Signup() {
     
     const errorMsg = error.message || error.toString();
     
-    // Don't show "already authenticated" as an error (we handle this by clearing)
+    // Don't show "already authenticated" as an error
     if (errorMsg.toLowerCase().includes('already authenticated')) {
       return null;
     }
@@ -464,12 +450,29 @@ export default function Signup() {
   const getButtonLabel = () => {
     if (attemptPhase === 'connecting') return 'Connecting...';
     if (attemptPhase === 'validating') return 'Validating...';
+    if (attemptPhase === 'checking-profile') return 'Checking...';
     if (attemptPhase === 'redirecting') return 'Redirecting...';
     return 'Sign up with Internet Identity';
   };
 
   // Show stalled help when stalled OR when in error phase with mobile login error
   const showHelp = stalledState.isStalled || (attemptPhase === 'error' && mobileLoginError);
+
+  // If auto-redirecting, show a loading state
+  if (isRedirecting) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6 py-16">
+        <div className="w-full max-w-md mx-auto space-y-4">
+          <Card className="bg-transparent border-0 shadow-none">
+            <CardContent className="flex flex-col items-center justify-center py-12 space-y-4">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <p className="text-muted-foreground">Redirecting...</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6 py-16">

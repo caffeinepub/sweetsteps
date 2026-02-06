@@ -1,77 +1,79 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix Signup/Login II resume semantics to prevent double invocation and false waiting/error states",
+  "title": "Post-auth pre-onboarding display-name gate and remove modal close control",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Ensure Signup proceeds immediately to post-auth handling and routes to /onboarding after successful Internet Identity auth (including already-authenticated returns) without showing false waiting/popup-blocked error UI or requiring Retry.",
+      "summary": "Show the display-name prompt only for authenticated new users (no backend profile) immediately before onboarding starts, and never for anonymous or onboarded users.",
       "acceptanceCriteria": [
-        "From a fresh browser session (or after clearing II session), clicking “Sign up with Internet Identity” and completing authentication returns to the app and automatically navigates to /onboarding without showing the popup-blocked help/error state.",
-        "If Internet Identity returns immediately because the user is already authenticated, the Signup page treats this as a successful auth state and continues to /onboarding (no blocking error UI, no second II call required).",
-        "The Signup page does not require a second user action (Retry) to complete routing to /onboarding once the user is authenticated.",
-        "The auth status UI does not remain stuck in “Waiting for authentication…” for an authenticated user."
+        "After a successful authentication, if the caller does not yet have a backend profile (onboarding incomplete) and they have no local display name and have not skipped, the display-name prompt is shown before the onboarding UI is accessible.",
+        "If the caller already has a backend profile (onboarding complete), the display-name prompt is not shown as part of navigation/redirect to the post-onboarding destination.",
+        "The onboarding page’s first step (the goal question) is not shown until the display-name prompt has been completed (Save) or dismissed via the existing Skip action.",
+        "The display-name prompt does not appear for anonymous identities."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/Signup.tsx",
+          "path": "frontend/src/components/RootLayout.tsx",
           "operation": "modify",
-          "description": "Update the Signup auth state machine to treat an already-present, valid iiIdentity as success (after a user-initiated attempt), transitioning directly into validating/redirecting without entering popup-waiting or blocked-popup error states; ensure the initial click handler short-circuits to post-auth flow when iiIdentity is already valid to avoid a second II invocation. Verify the component's usage instructions before implementing."
+          "description": "Remove the global PostAuthDisplayNameGate mounting so the display-name prompt is no longer shown outside the new-user pre-onboarding flow. (This prevents the prompt from appearing for already-onboarded users on post-onboarding pages.)"
         },
         {
-          "path": "frontend/src/components/auth/InternetIdentityAuthorizeCallbackHandler.tsx",
+          "path": "frontend/src/pages/Onboarding.tsx",
           "operation": "modify",
-          "description": "Align callback handling behavior with the fixed Signup flow by ensuring the authorize-hash callback remains non-blocking and does not conflict with Signup’s own post-auth transition (e.g., avoid leaving the app in a perceived 'waiting' state when Signup is ready to navigate). Verify the component's usage instructions before implementing."
+          "description": "Implement a pre-onboarding gate that checks: authenticated non-anonymous identity, backend profile is null (using getCallerUserProfile from the authorization system), and local display-name state (no saved name and not skipped). When gate conditions are met, render the existing DisplayNamePromptDialog and block rendering/interaction of onboarding step 1 until Save or Skip is taken. Use the existing localStorage helpers (useLocalDisplayName). Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/auth/PostAuthDisplayNameGate.tsx",
+          "operation": "modify",
+          "description": "Deprecate or narrow this component so it no longer triggers the display-name prompt globally (e.g., convert to a no-op wrapper or add route/profile gating if it must remain for compatibility). Ensure it will not show the prompt for onboarded users. Verify the component's usage instructions before implementing."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Make Signup detect and resume a successful authentication across remounts using sessionStorage (sweetsteps_user_initiated_auth) plus a valid iiIdentity, without redirecting users who did not initiate signup in the current visit.",
+      "summary": "Update post-auth redirect logic so new authenticated users reach onboarding in a way that triggers the pre-onboarding display-name gate first (callback handler and auth-page auto-redirect), without loops.",
       "acceptanceCriteria": [
-        "If the user initiated auth (sweetsteps_user_initiated_auth is set) and a valid Internet Identity is present on page load/return, the Signup page transitions into the validating/redirecting phases automatically and navigates to /onboarding.",
-        "The fix does not introduce automatic redirects for users who did not click Sign up during the current visit (i.e., do not redirect solely because an identity is restored unless the existing user-initiated marker indicates an active attempt)."
+        "Flows that currently navigate new authenticated users to /onboarding (e.g., callback-handling and auth-page auto-redirect) instead trigger the display-name step first when the display-name gate conditions are met.",
+        "If the user already has a display name saved (or has skipped for that principal), the app proceeds directly to onboarding without showing the prompt.",
+        "No redirect loops occur (e.g., repeatedly re-triggering the display-name step)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/Signup.tsx",
+          "path": "frontend/src/components/auth/InternetIdentityAuthorizeCallbackHandler.tsx",
           "operation": "modify",
-          "description": "Add a remount-safe resume guard: on mount (and when iiIdentity/initialization state changes), if sessionStorage indicates sweetsteps_user_initiated_auth and iiIdentity is valid, set the in-memory userInitiatedAuthRef and drive attemptPhase into validating/redirecting (including starting diagnostics state if needed) so the flow completes without requiring Retry. Verify the component's usage instructions before implementing."
+          "description": "Adjust the post-auth navigation decision for new users so that when it routes to onboarding, it reliably results in the pre-onboarding display-name gate being evaluated first (before onboarding questions can render). Keep the existing behavior for onboarded users (weekly-mountain and Sweet Summit handling). Ensure no repeated navigation occurs after the first handling. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/hooks/useAuthAttemptGuard.ts",
+          "path": "frontend/src/hooks/useAuthPageAutoredirect.ts",
           "operation": "modify",
-          "description": "Expose a small helper (e.g., a read method) to consistently check whether sweetsteps_user_initiated_auth is set for the current visit, so pages can resume post-auth reliably after remount without duplicating sessionStorage key logic. Verify the component's usage instructions before implementing."
+          "description": "Update the auto-redirect behavior for authenticated users on /login and /signup so that the new-user redirect path ensures the display-name gate will run before onboarding questions (while still sending onboarded users to /weekly-mountain). Preserve the one-time redirect guard to avoid loops. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/Login.tsx",
+          "operation": "modify",
+          "description": "Align any explicit post-auth navigation to onboarding so it does not bypass the new pre-onboarding display-name gate (e.g., avoid alternative destinations for profile-null users and ensure the onboarding page is the single entry where the gate runs). Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/Signup.tsx",
+          "operation": "modify",
+          "description": "Align any explicit post-auth navigation to onboarding so it does not bypass the new pre-onboarding display-name gate, while keeping existing signup flow behavior and avoiding redirect loops. Verify the component's usage instructions before implementing."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Update Signup Retry so it completes post-auth flow when already authenticated and only re-attempts Internet Identity login when no valid identity is available.",
+      "summary": "Remove the visible close (X) control from the display-name modal without changing any other behavior.",
       "acceptanceCriteria": [
-        "When the user is already authenticated, pressing Retry does not open Internet Identity again and instead immediately proceeds toward /onboarding.",
-        "Retry remains functional for genuinely blocked/failed popups (it can still re-attempt login when there is no authenticated identity available)."
+        "The display-name modal no longer renders a visible close (X) control.",
+        "The modal remains non-dismissable via clicking outside (as it is now), and still supports only the existing Save and Skip actions for dismissal/progression.",
+        "No other text, layout, or button behavior in the display-name modal changes aside from removing the X control."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/Signup.tsx",
+          "path": "frontend/src/components/auth/DisplayNamePromptDialog.tsx",
           "operation": "modify",
-          "description": "Adjust handleRetry to branch based on iiIdentity validity: if a valid iiIdentity exists, skip iiLogin and immediately transition into validation/redirect steps; otherwise perform the existing reset + re-attempt login behavior for blocked/failed popups. Verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "summary": "Apply the same already-authenticated and remount-resume semantics to Login so it never gets stuck in “Waiting for authentication…” or requires Retry when iiIdentity is already available.",
-      "acceptanceCriteria": [
-        "If the user is already authenticated, clicking “Log in with Internet Identity” does not produce a popup-blocked waiting state; it proceeds to the normal post-auth redirect logic (/weekly-mountain or /onboarding).",
-        "If the user returns from Internet Identity and the page remounts, Login resumes the post-auth flow using the existing identity when sweetsteps_user_initiated_auth is present."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/Login.tsx",
-          "operation": "modify",
-          "description": "Add remount-safe resume logic mirroring Signup: if sweetsteps_user_initiated_auth is present and iiIdentity is valid, restore the userInitiatedAuthRef and transition directly into validating/checking-access/redirecting; also short-circuit the main login click handler to post-auth flow when iiIdentity is already valid to avoid a second II invocation and false popup-blocked states. Verify the component's usage instructions before implementing."
+          "description": "Remove the non-functional close (X) control from the rendered dialog by adjusting only this component (without modifying any files under frontend/src/components/ui). Keep outside-click prevention, onOpenChange no-op, validation, Save, and Skip behavior unchanged. Verify the component's usage instructions before implementing."
         }
       ]
     }

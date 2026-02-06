@@ -9,6 +9,7 @@ import { useMobileInternetIdentityLoginPatched } from '../hooks/useMobileInterne
 import { useAuthFlowDiagnostics } from '../hooks/useAuthFlowDiagnostics';
 import { useCanisterWarmup } from '../hooks/useCanisterWarmup';
 import { usePostAuthTimeout } from '../hooks/usePostAuthTimeout';
+import { useAuthPageAutoredirect } from '../hooks/useAuthPageAutoredirect';
 import { isIdentityValid, isSessionStale } from '../utils/identityValidation';
 import { getPlatformInfo, isChromeAndroid } from '../utils/platform';
 import { Button } from '@/components/ui/button';
@@ -63,6 +64,9 @@ export default function Login() {
   const debugAuth = getUrlParameter('debugAuth') === '1';
   const platformInfo = getPlatformInfo();
 
+  // Auto-redirect if already authenticated
+  const { isRedirecting } = useAuthPageAutoredirect();
+
   // Post-auth timeout for validation phase
   const validationTimeout = usePostAuthTimeout({
     phase: attemptPhase === 'validating' ? 'validation' : null,
@@ -105,30 +109,6 @@ export default function Login() {
       iiClear();
     }
   }, [iiIdentity, iiClear, attemptPhase]);
-
-  // REMOUNT-SAFE RESUME: Restore userInitiatedAuthRef and resume post-auth flow if returning from II
-  useEffect(() => {
-    // Only run once on mount or when initialization completes
-    if (iiInitializing) return;
-    
-    // Check if user initiated auth in this visit (via sessionStorage)
-    const hasInitiatedAuth = hasUserInitiatedAuth();
-    
-    if (hasInitiatedAuth && iiIdentity && isIdentityValid(iiIdentity)) {
-      console.log('Login: Detected valid identity with user-initiated auth flag - resuming post-auth flow');
-      
-      // Restore the ref so other effects can proceed
-      userInitiatedAuthRef.current = true;
-      
-      // If we're still in idle phase, transition to validating
-      if (attemptPhase === 'idle') {
-        console.log('Login: Transitioning from idle to validating after remount');
-        setAttemptPhase('validating');
-        diagnostics.startAttempt();
-        diagnostics.transitionStep('identity-validation', { valid: true, resumed: true });
-      }
-    }
-  }, [iiInitializing, iiIdentity, attemptPhase, hasUserInitiatedAuth, diagnostics]);
 
   // Detect when II popup is closed/canceled via window focus
   useEffect(() => {
@@ -369,16 +349,6 @@ export default function Login() {
   }, [attemptPhase, validatedIdentity, actor, actorFetching, diagnostics, actorReadyTimeout]);
 
   const handleIILogin = useCallback(async () => {
-    // SHORT-CIRCUIT: If already authenticated with valid identity, skip II and go straight to post-auth
-    if (iiIdentity && isIdentityValid(iiIdentity)) {
-      console.log('Login: Already authenticated, skipping II and proceeding to post-auth flow');
-      userInitiatedAuthRef.current = true;
-      setAttemptPhase('validating');
-      diagnostics.startAttempt();
-      diagnostics.transitionStep('identity-validation', { valid: true, alreadyAuthenticated: true });
-      return;
-    }
-    
     // Guard against re-entrancy
     if (!startAttempt()) {
       return;
@@ -447,7 +417,7 @@ export default function Login() {
       // This preserves the user gesture for Chrome's popup requirements
       iiLogin();
     }
-  }, [startAttempt, iiLogin, mobileLogin, endAttempt, diagnostics, iiIdentity]);
+  }, [startAttempt, iiLogin, mobileLogin, endAttempt, diagnostics]);
 
   const handleRetryOnboardingCheck = useCallback(() => {
     setOnboardingCheckError(null);
@@ -477,23 +447,7 @@ export default function Login() {
   }, [iiIdentity, actor, actorFetching, navigate, diagnostics, onboardingCheckTimeout, userProfile, profileFetched]);
 
   const handleRetry = useCallback(() => {
-    // If already authenticated, skip II and complete post-auth flow
-    if (iiIdentity && isIdentityValid(iiIdentity)) {
-      console.log('Login Retry: Already authenticated, completing post-auth flow');
-      userInitiatedAuthRef.current = true;
-      setAttemptPhase('validating');
-      setMobileLoginError(null);
-      setOnboardingCheckError(null);
-      diagnostics.reset();
-      diagnostics.startAttempt();
-      diagnostics.transitionStep('identity-validation', { valid: true, retryWithExistingIdentity: true });
-      validationTimeout.reset();
-      actorReadyTimeout.reset();
-      onboardingCheckTimeout.reset();
-      return;
-    }
-    
-    // Otherwise, force reset and retry II login
+    // Force reset and retry II login
     forceReset();
     waitingForIIRef.current = false;
     popupOpenDetectedRef.current = false;
@@ -509,18 +463,11 @@ export default function Login() {
     setTimeout(() => {
       handleIILogin();
     }, 100);
-  }, [forceReset, handleIILogin, diagnostics, validationTimeout, actorReadyTimeout, onboardingCheckTimeout, iiIdentity]);
+  }, [forceReset, handleIILogin, diagnostics, validationTimeout, actorReadyTimeout, onboardingCheckTimeout]);
 
   const handleReturnToLanding = useCallback(() => {
     navigate({ to: '/' });
   }, [navigate]);
-
-  const handleLogout = useCallback(() => {
-    if (iiIdentity) {
-      iiClear();
-    }
-    navigate({ to: '/' });
-  }, [iiIdentity, iiClear, navigate]);
 
   // Parse error message for user-friendly display
   const getErrorMessage = (error: Error | undefined): string | null => {
@@ -528,7 +475,7 @@ export default function Login() {
     
     const errorMsg = error.message || error.toString();
     
-    // Don't show "already authenticated" as an error (we handle this by clearing)
+    // Don't show "already authenticated" as an error
     if (errorMsg.toLowerCase().includes('already authenticated')) {
       return null;
     }
@@ -563,6 +510,22 @@ export default function Login() {
 
   // Show stalled help when stalled OR when in error phase with mobile login error
   const showHelp = stalledState.isStalled || (attemptPhase === 'error' && mobileLoginError);
+
+  // If auto-redirecting, show a loading state
+  if (isRedirecting) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6 py-16">
+        <div className="w-full max-w-md mx-auto space-y-4">
+          <Card className="bg-transparent border-0 shadow-none">
+            <CardContent className="flex flex-col items-center justify-center py-12 space-y-4">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <p className="text-muted-foreground">Redirecting...</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6 py-16">

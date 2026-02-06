@@ -1,61 +1,51 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-06T07:00:27.706Z",
+  "generatedAt": "2026-02-06T08:18:04.498Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
-    "implemented": 4,
+    "total": 3,
+    "implemented": 2,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Fix the Signup Internet Identity flow so that after a successful Internet Identity authentication (including the case where the user returns already authenticated), the Signup page immediately proceeds to post-auth handling and routes to /onboarding without showing the “Waiting for authentication…” / popup-blocked error and without requiring the user to press Retry.",
+        "summary": "Show the display-name prompt only after a user has successfully authenticated and immediately before onboarding begins (i.e., before the first onboarding question). The prompt must be part of the new-user flow (users who have not completed onboarding yet), and it should not appear for users who already completed onboarding.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/Signup.tsx",
-          "frontend/src/components/auth/InternetIdentityAuthorizeCallbackHandler.tsx"
+          "frontend/src/components/RootLayout.tsx",
+          "frontend/src/pages/Onboarding.tsx",
+          "frontend/src/components/auth/PostAuthDisplayNameGate.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/Signup.tsx",
-          "frontend/src/components/auth/InternetIdentityAuthorizeCallbackHandler.tsx"
+          "frontend/src/components/RootLayout.tsx",
+          "frontend/src/pages/Onboarding.tsx",
+          "frontend/src/components/auth/PostAuthDisplayNameGate.tsx"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Update the Signup page’s attempt-state/guards so that successful authentication is detected even if the component remounts or local state/refs reset (e.g., after returning from Internet Identity). Use the existing sessionStorage user-initiated-auth marker (sweetsteps_user_initiated_auth) and the presence of a valid iiIdentity to resume the flow and complete validation/navigation.",
-        "status": "implemented",
+        "summary": "Update all post-auth redirect logic to route new users through the display-name step before landing them in onboarding (including the Internet Identity authorize callback handler and auth-page auto-redirect logic).",
+        "status": "missing",
         "plannedFiles": [
-          "frontend/src/pages/Signup.tsx",
-          "frontend/src/hooks/useAuthAttemptGuard.ts"
+          "frontend/src/components/auth/InternetIdentityAuthorizeCallbackHandler.tsx",
+          "frontend/src/hooks/useAuthPageAutoredirect.ts",
+          "frontend/src/pages/Login.tsx",
+          "frontend/src/pages/Signup.tsx"
         ],
-        "matchedFiles": [
-          "frontend/src/pages/Signup.tsx",
-          "frontend/src/hooks/useAuthAttemptGuard.ts"
-        ]
+        "matchedFiles": []
       },
       {
         "id": "REQ-3",
-        "summary": "Adjust the Retry behavior on the Signup page so that it does not unnecessarily trigger a second Internet Identity login when the user is already authenticated; instead, it should recover by completing the post-auth flow (validation + navigation) using the existing authenticated identity.",
+        "summary": "Remove the non-functional “X”/close button from the display-name modal while keeping all other UI and behavior the same (validation, Save, Skip, outside-click behavior, etc.).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/Signup.tsx"
+          "frontend/src/components/auth/DisplayNamePromptDialog.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/Signup.tsx"
-        ]
-      },
-      {
-        "id": "REQ-4",
-        "summary": "Keep the Login page behavior consistent with the fixed Signup semantics for the “already authenticated” and “return-from-II/remount” scenarios, so Login also does not get stuck in “Waiting for authentication…” or require Retry when an authenticated identity is already available.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/Login.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/Login.tsx"
+          "frontend/src/components/auth/DisplayNamePromptDialog.tsx"
         ]
       }
     ]
@@ -65,10 +55,10 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/auth/InternetIdentityAuthorizeCallbackHandler.tsx",
-    "frontend/src/hooks/useAuthAttemptGuard.ts",
-    "frontend/src/pages/Login.tsx",
-    "frontend/src/pages/Signup.tsx",
+    "frontend/src/components/RootLayout.tsx",
+    "frontend/src/components/auth/DisplayNamePromptDialog.tsx",
+    "frontend/src/components/auth/PostAuthDisplayNameGate.tsx",
+    "frontend/src/pages/Onboarding.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

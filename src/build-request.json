@@ -1,87 +1,75 @@
 {
   "kind": "build_request",
-  "title": "Fix double Internet Identity invocation and false “Waiting for authentication” error on Signup",
-  "priority": "high",
+  "title": "Move display-name prompt to post-auth pre-onboarding and remove the non-functional close button",
+  "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Fix the Signup Internet Identity flow so that after a successful Internet Identity authentication (including the case where the user returns already authenticated), the Signup page immediately proceeds to post-auth handling and routes to /onboarding without showing the “Waiting for authentication…” / popup-blocked error and without requiring the user to press Retry.",
+      "text": "Show the display-name prompt only after a user has successfully authenticated and immediately before onboarding begins (i.e., before the first onboarding question). The prompt must be part of the new-user flow (users who have not completed onboarding yet), and it should not appear for users who already completed onboarding.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "yess correct. please fix it now"
+          "that display name thing should come up after they are authenticated. Like right before onboarding.",
+          "Yes. Every new user",
+          "They are asked what is their big goal. That is the first step in the onboarding flow."
         ]
       },
       "acceptanceCriteria": [
-        "From a fresh browser session (or after clearing II session), clicking “Sign up with Internet Identity” and completing authentication returns to the app and automatically navigates to /onboarding without showing the popup-blocked help/error state.",
-        "If Internet Identity returns immediately because the user is already authenticated, the Signup page treats this as a successful auth state and continues to /onboarding (no blocking error UI, no second II call required).",
-        "The Signup page does not require a second user action (Retry) to complete routing to /onboarding once the user is authenticated.",
-        "The auth status UI does not remain stuck in “Waiting for authentication…” for an authenticated user."
+        "After a successful authentication, if the caller does not yet have a backend profile (onboarding incomplete) and they have no local display name and have not skipped, the display-name prompt is shown before the onboarding UI is accessible.",
+        "If the caller already has a backend profile (onboarding complete), the display-name prompt is not shown as part of navigation/redirect to the post-onboarding destination.",
+        "The onboarding page’s first step (the goal question) is not shown until the display-name prompt has been completed (Save) or dismissed via the existing Skip action.",
+        "The display-name prompt does not appear for anonymous identities."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Update the Signup page’s attempt-state/guards so that successful authentication is detected even if the component remounts or local state/refs reset (e.g., after returning from Internet Identity). Use the existing sessionStorage user-initiated-auth marker (sweetsteps_user_initiated_auth) and the presence of a valid iiIdentity to resume the flow and complete validation/navigation.",
+      "text": "Update all post-auth redirect logic to route new users through the display-name step before landing them in onboarding (including the Internet Identity authorize callback handler and auth-page auto-redirect logic).",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "basically it clls II TWICE. get wt im saying?"
+          "move the display‑name step to appear right after authentication and right before the first onboarding question (“What is your big goal?”)"
         ]
       },
       "acceptanceCriteria": [
-        "If the user initiated auth (sweetsteps_user_initiated_auth is set) and a valid Internet Identity is present on page load/return, the Signup page transitions into the validating/redirecting phases automatically and navigates to /onboarding.",
-        "The fix does not introduce automatic redirects for users who did not click Sign up during the current visit (i.e., do not redirect solely because an identity is restored unless the existing user-initiated marker indicates an active attempt)."
+        "Flows that currently navigate new authenticated users to /onboarding (e.g., callback-handling and auth-page auto-redirect) instead trigger the display-name step first when the display-name gate conditions are met.",
+        "If the user already has a display name saved (or has skipped for that principal), the app proceeds directly to onboarding without showing the prompt.",
+        "No redirect loops occur (e.g., repeatedly re-triggering the display-name step)."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Adjust the Retry behavior on the Signup page so that it does not unnecessarily trigger a second Internet Identity login when the user is already authenticated; instead, it should recover by completing the post-auth flow (validation + navigation) using the existing authenticated identity.",
+      "text": "Remove the non-functional “X”/close button from the display-name modal while keeping all other UI and behavior the same (validation, Save, Skip, outside-click behavior, etc.).",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "n when i click on that \"retry\" btn, it takes me to onboarding. basically it clls II TWICE."
+          "in the display name modal please remove the x button because it is not doing anything. Keep everything else the exact same."
         ]
       },
       "acceptanceCriteria": [
-        "When the user is already authenticated, pressing Retry does not open Internet Identity again and instead immediately proceeds toward /onboarding.",
-        "Retry remains functional for genuinely blocked/failed popups (it can still re-attempt login when there is no authenticated identity available)."
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Keep the Login page behavior consistent with the fixed Signup semantics for the “already authenticated” and “return-from-II/remount” scenarios, so Login also does not get stuck in “Waiting for authentication…” or require Retry when an authenticated identity is already available.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "please fix it now"
-        ]
-      },
-      "acceptanceCriteria": [
-        "If the user is already authenticated, clicking “Log in with Internet Identity” does not produce a popup-blocked waiting state; it proceeds to the normal post-auth redirect logic (/weekly-mountain or /onboarding).",
-        "If the user returns from Internet Identity and the page remounts, Login resumes the post-auth flow using the existing identity when sweetsteps_user_initiated_auth is present."
+        "The display-name modal no longer renders a visible close (X) control.",
+        "The modal remains non-dismissable via clicking outside (as it is now), and still supports only the existing Save and Skip actions for dismissal/progression.",
+        "No other text, layout, or button behavior in the display-name modal changes aside from removing the X control."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under frontend/src/hooks/useInternetIdentity.ts or other paths listed in frontend.immutablePaths.",
-    "Use English for any user-facing text."
+    "Do not modify any files under frontend/src/components/ui (Shadcn UI sources are read-only).",
+    "Keep all user-facing text in English.",
+    "Backend remains single-actor (no additional backend services/canisters)."
   ],
   "nonGoals": [
-    "Changing backend canister logic or the user profile/onboarding schema.",
-    "Introducing new authentication providers beyond Internet Identity.",
-    "Redesigning the overall auth UI beyond what is required to prevent the false error/double-II invocation."
+    "Changing onboarding questions, steps, or copy beyond inserting the display-name step before onboarding begins.",
+    "Removing or redesigning the existing Skip-for-now behavior for the display-name prompt.",
+    "Adding third-party authentication providers beyond Internet Identity."
   ],
   "imageRequirements": {
     "required": [],

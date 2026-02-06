@@ -1,39 +1,36 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-06T07:00:27.703Z",
-  "summary": "Diff appears to implement remount-safe auth-attempt tracking via sessionStorage and updates Signup/Login flows to resume post-auth handling when an II identity is already present, aiming to prevent the false “Waiting for authentication”/popup-blocked state and double-II invocation. However, the diff also introduces/changes an II authorize callback handler with onboarding/Sweet Summit redirect logic and expands the auth-attempt guard with extra diagnostics features that were not requested.",
-  "missing_requirements": [],
-  "hallucinated_features": [
+  "generatedAt": "2026-02-06T08:18:04.495Z",
+  "summary": "REQ-1 and REQ-3 appear to be implemented by moving the display-name gating into the Onboarding page for authenticated, non-anonymous new users (no backend profile) and hiding the dialog close control while keeping outside-click disabled. REQ-2 (updating post-auth redirect logic in callback handler and auth auto-redirect flows) is not evidenced in the provided diff summary and appears missing.",
+  "missing_requirements": [
     {
-      "description": "Added/modified a global Internet Identity authorize callback handler that parses `#authorize=<principal>` from the URL hash and performs onboarding/Sweet Summit-based redirects (including conditional navigation to `/weekly-mountain`).",
-      "reason": "BuildRequest focuses on fixing Signup/Login remount/already-authenticated semantics and Retry behavior; it does not request adding or changing a separate callback handler or introducing new redirect rules based on Sweet Summit/onboarding completion within that handler.",
+      "id": "REQ-2",
+      "requirement": "Update all post-auth redirect logic to route new users through the display-name step before landing them in onboarding (including the Internet Identity authorize callback handler and auth-page auto-redirect logic).",
+      "reason": "The diff shows the display-name prompt logic moved into `Onboarding.tsx` and the previous global gate component deprecated, but does not show any changes to the Internet Identity authorize callback handler or auth-page auto-redirect logic to ensure new authenticated users are routed through the display-name step before onboarding. With the global gate removed from `RootLayout`, new-user post-auth redirects may still land directly on `/onboarding` without any updated redirect logic being demonstrated here.",
       "evidence": [
-        "frontend/src/components/auth/InternetIdentityAuthorizeCallbackHandler.tsx"
-      ]
-    },
-    {
-      "description": "Expanded `useAuthAttemptGuard` to include attempt timestamps, correlation IDs, elapsed-time helpers, and a 'forceReset' recovery API (beyond just using the existing sessionStorage marker to guard/resume flows).",
-      "reason": "REQ-2 specifically asks to use the existing sessionStorage marker plus valid identity to resume the flow; the additional correlation/timing/diagnostic utilities are not explicitly requested.",
-      "evidence": [
-        "frontend/src/hooks/useAuthAttemptGuard.ts"
-      ]
-    },
-    {
-      "description": "Documentation-level claim of adding a new `/signup-test` route and various unrelated UI/styling/auth-provider changes (e.g., 'password auth provider removed', global font/theme changes).",
-      "reason": "Non-goals include avoiding auth UI redesign beyond what’s needed for the II flow fix; these items are not requested by REQ-1–REQ-4. Evidence is limited to the repository summary file rather than concrete code diff in this change list.",
-      "evidence": [
-        "frontend-file-summaries.txt"
+        "frontend/src/components/RootLayout.tsx",
+        "frontend/src/components/auth/PostAuthDisplayNameGate.tsx",
+        "frontend/src/pages/Onboarding.tsx"
       ]
     }
   ],
-  "confidence": 0.62,
+  "hallucinated_features": [
+    {
+      "description": "Deprecated `PostAuthDisplayNameGate` component to render nothing and marked it as backward-compatibility.",
+      "reason": "The BuildRequest asks to move the display-name prompt to post-auth pre-onboarding and remove the close button; it does not request deprecating/keeping a legacy gate component stub.",
+      "evidence": [
+        "frontend/src/components/auth/PostAuthDisplayNameGate.tsx"
+      ]
+    }
+  ],
+  "confidence": 0.68,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/components/auth/InternetIdentityAuthorizeCallbackHandler.tsx",
-    "frontend/src/hooks/useAuthAttemptGuard.ts",
-    "frontend/src/pages/Login.tsx",
-    "frontend/src/pages/Signup.tsx",
+    "frontend/src/components/RootLayout.tsx",
+    "frontend/src/components/auth/DisplayNamePromptDialog.tsx",
+    "frontend/src/components/auth/PostAuthDisplayNameGate.tsx",
+    "frontend/src/pages/Onboarding.tsx",
     "project_state.json"
   ]
 }

@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useActor } from '../hooks/useActor';
 import { useGetCallerUserProfile, useSaveCallerUserProfile } from '../hooks/useQueries';
+import { useLocalDisplayName } from '../hooks/useLocalDisplayName';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +14,7 @@ import { Loader2, AlertCircle, ChevronRight, ChevronLeft, Mountain, Target, Foot
 import { generateOnboardingPlan, type OnboardingPlanResponse } from '../lib/aiProxyClient';
 import { useOnboardingResult } from '../contexts/OnboardingResultContext';
 import { toSafeString } from '../utils/safeRender';
+import { DisplayNamePromptDialog } from '../components/auth/DisplayNamePromptDialog';
 
 const SWEET_SUMMIT_SEEN_KEY = 'sweetsteps_sweet_summit_seen';
 
@@ -23,6 +25,7 @@ export default function Onboarding() {
   const saveProfileMutation = useSaveCallerUserProfile();
   const navigate = useNavigate();
   const { onboardingResult, setOnboardingResult, clearOnboardingResult } = useOnboardingResult();
+  const { getDisplayName, setDisplayName, hasSkipped, setSkipped } = useLocalDisplayName();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [goal, setGoal] = useState('');
@@ -32,6 +35,9 @@ export default function Onboarding() {
   const [error, setError] = useState<string | null>(null);
   const [planData, setPlanData] = useState<OnboardingPlanResponse | null>(null);
   const [carouselSlide, setCarouselSlide] = useState(0);
+
+  // Display name gate state
+  const [showDisplayNamePrompt, setShowDisplayNamePrompt] = useState(false);
 
   // Check if user has already completed onboarding (has a profile in backend)
   useEffect(() => {
@@ -52,6 +58,52 @@ export default function Onboarding() {
       navigate({ to: '/signup' });
     }
   }, [identity, actorFetching, navigate]);
+
+  // Display name gate: Check if we should show the prompt
+  useEffect(() => {
+    if (!identity || profileLoading || !profileFetched) {
+      setShowDisplayNamePrompt(false);
+      return;
+    }
+
+    // Only show for authenticated non-anonymous identities
+    if (identity.getPrincipal().isAnonymous()) {
+      setShowDisplayNamePrompt(false);
+      return;
+    }
+
+    // Only show if user has no backend profile (new user)
+    if (userProfile !== null) {
+      setShowDisplayNamePrompt(false);
+      return;
+    }
+
+    // Check if display name exists or was skipped
+    const principal = identity.getPrincipal().toString();
+    const existingName = getDisplayName(principal);
+    const skipped = hasSkipped(principal);
+
+    // Show prompt if no name exists and user hasn't skipped
+    if (!existingName && !skipped) {
+      setShowDisplayNamePrompt(true);
+    } else {
+      setShowDisplayNamePrompt(false);
+    }
+  }, [identity, userProfile, profileLoading, profileFetched, getDisplayName, hasSkipped]);
+
+  const handleDisplayNameSave = (name: string) => {
+    if (!identity) return;
+    const principal = identity.getPrincipal().toString();
+    setDisplayName(principal, name);
+    setShowDisplayNamePrompt(false);
+  };
+
+  const handleDisplayNameSkip = () => {
+    if (!identity) return;
+    const principal = identity.getPrincipal().toString();
+    setSkipped(principal);
+    setShowDisplayNamePrompt(false);
+  };
 
   // Keyboard navigation for carousel
   useEffect(() => {
@@ -163,6 +215,25 @@ export default function Onboarding() {
           <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
+    );
+  }
+
+  // Show display name prompt if needed (blocks onboarding UI)
+  if (showDisplayNamePrompt) {
+    return (
+      <>
+        <DisplayNamePromptDialog
+          open={showDisplayNamePrompt}
+          onSave={handleDisplayNameSave}
+          onSkip={handleDisplayNameSkip}
+        />
+        <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6 py-16">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-muted-foreground">Setting up your account...</p>
+          </div>
+        </div>
+      </>
     );
   }
 

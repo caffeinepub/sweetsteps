@@ -1,12 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Fix the Internet Identity authentication flow on Signup (and keep Login consistent) to prevent double Internet Identity invocation and the false “Waiting for authentication…” / popup-blocked error when the user is already authenticated or returns from Internet Identity.
+**Goal:** Move the display-name prompt to occur immediately after successful authentication and before onboarding starts, and remove the non-functional close (X) button from the modal.
 
 **Planned changes:**
-- Update Signup page auth attempt guards/state so that if `sweetsteps_user_initiated_auth` is set and a valid Internet Identity (`iiIdentity`) is present after return/remount, the page immediately continues post-auth handling and routes to `/onboarding`.
-- Prevent Signup from showing or getting stuck in “Waiting for authentication…” / popup-blocked error UI when authentication has already succeeded (including immediate return because the user is already authenticated).
-- Adjust Signup Retry behavior: if already authenticated, do not trigger a second Internet Identity login; instead complete validation + navigation using the existing identity.
-- Align Login page behavior with the fixed semantics for “already authenticated” and “return-from-II/remount” scenarios so it resumes post-auth flow without requiring Retry or showing a false waiting/error state.
+- Gate the display-name prompt to show only for authenticated, new users who have not completed onboarding, and only before the first onboarding question is accessible.
+- Update post-auth redirect/navigation logic (including Internet Identity callback handling and auth-page auto-redirect) to route eligible new users through the display-name step before onboarding, without causing redirect loops.
+- Remove the visible close (X) control from the display-name modal while keeping Save/Skip behavior and all other UI/validation the same.
 
-**User-visible outcome:** After signing up (or logging in) with Internet Identity, users who successfully authenticate—including those already authenticated—are automatically taken to the appropriate next page (Signup → `/onboarding`; Login → normal redirect) without a false “Waiting for authentication…” error and without needing to press Retry.
+**User-visible outcome:** After signing in, new users are prompted to set (or skip) a display name before seeing the first onboarding question; returning/onboarded users are not prompted, and the display-name modal no longer shows an X button.
