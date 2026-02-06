@@ -1,23 +1,83 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-06T04:15:39.182Z",
+  "generatedAt": "2026-02-06T05:56:57.726Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 0,
-    "implemented": 0,
-    "items": []
+    "total": 4,
+    "implemented": 3,
+    "items": [
+      {
+        "id": "REQ-1",
+        "summary": "Add a backend endpoint that deletes the currently authenticated user’s stored data in the canister so that the next Internet Identity login is treated as a new user by SweetSteps.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-2",
+        "summary": "Add a global, in-app Logout action in SweetSteps that clears the app’s authenticated session state and returns the user to the landing or login screen.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/utils/sessionReset.ts",
+          "frontend/src/components/AuthenticatedHeader.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/utils/sessionReset.ts",
+          "frontend/src/components/AuthenticatedHeader.tsx"
+        ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Add an in-app Delete Account action in SweetSteps that deletes the user’s backend record and then logs them out and resets all local SweetSteps state.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/AuthenticatedHeader.tsx",
+          "frontend/src/utils/sessionReset.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/AuthenticatedHeader.tsx",
+          "frontend/src/utils/sessionReset.ts"
+        ]
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Ensure the Logout and Delete Account actions are accessible from the main authenticated experience (at minimum on the primary authenticated pages) and behave consistently across routes.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/WeeklyMountain.tsx",
+          "frontend/src/pages/Daily.tsx",
+          "frontend/src/pages/Fridge.tsx",
+          "frontend/src/pages/SweetSummit.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/WeeklyMountain.tsx",
+          "frontend/src/pages/Daily.tsx",
+          "frontend/src/pages/Fridge.tsx",
+          "frontend/src/pages/SweetSummit.tsx"
+        ]
+      }
+    ]
   },
   "changedFiles": [
+    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/pages/Login.tsx",
-    "frontend/src/pages/Signup.tsx",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/components/AuthenticatedHeader.tsx",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
+    "frontend/src/pages/Daily.tsx",
+    "frontend/src/pages/Fridge.tsx",
+    "frontend/src/pages/SweetSummit.tsx",
+    "frontend/src/pages/WeeklyMountain.tsx",
+    "frontend/src/utils/sessionReset.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

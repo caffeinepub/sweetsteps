@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import TaskModal from '@/components/TaskModal';
 import { useOnboardingResult } from '../contexts/OnboardingResultContext';
 import { generateDailySteps, type DailyTask } from '../lib/aiProxyClient';
+import AuthenticatedHeader from '../components/AuthenticatedHeader';
 
 // Helper to format today's date
 const formatTodayDate = (): string => {
@@ -125,13 +126,8 @@ export default function Daily() {
   if (tasks.length === 0) {
     return (
       <div className="min-h-screen bg-background text-foreground">
-        {/* Header */}
-        <header className="w-full border-b border-border bg-card">
-          <div className="max-w-4xl mx-auto px-6 py-4">
-            <h1 className="text-2xl font-bold text-foreground">Today's SweetSteps</h1>
-            <p className="text-sm text-muted-foreground mt-1">{formatTodayDate()}</p>
-          </div>
-        </header>
+        {/* Header with Logout and Delete Account */}
+        <AuthenticatedHeader title="Today's SweetSteps" subtitle={formatTodayDate()} />
 
         {/* Main Content */}
         <main className="max-w-4xl mx-auto px-6 py-12">
@@ -165,13 +161,8 @@ export default function Daily() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <header className="w-full border-b border-border bg-card">
-        <div className="max-w-4xl mx-auto px-6 py-4">
-          <h1 className="text-2xl font-bold text-foreground">Today's SweetSteps</h1>
-          <p className="text-sm text-muted-foreground mt-1">{formatTodayDate()}</p>
-        </div>
-      </header>
+      {/* Header with Logout and Delete Account */}
+      <AuthenticatedHeader title="Today's SweetSteps" subtitle={formatTodayDate()} />
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-6 py-12">

@@ -1,12 +1,107 @@
 {
   "kind": "build_request",
-  "title": "Untitled request",
+  "title": "Add in-app Logout and Delete Account flows for Internet Identity testing",
   "priority": "normal",
-  "requirements": [],
-  "constraints": [],
-  "nonGoals": [],
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "text": "Add a backend endpoint that deletes the currently authenticated user’s stored data in the canister so that the next Internet Identity login is treated as a new user by SweetSteps.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "recent-1"
+        ],
+        "quotes": [
+          "ok then can u add both and ensure that they work properly?"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Backend exposes a `shared ({ caller })` method to delete the caller’s user record(s) (at minimum, the `userProfiles` entry keyed by `caller`).",
+        "Calling the delete method as an authenticated user removes their stored profile, and subsequent calls to `getCallerUserProfile()` return `null`/`?UserProfile = null` (or equivalent absence).",
+        "Calling the delete method when no record exists does not crash the canister (should be a no-op or return a clear, non-trapping result).",
+        "Authorization rules remain enforced (method traps or denies when caller is not permitted according to existing access control policy)."
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Add a global, in-app Logout action in SweetSteps that clears the app’s authenticated session state and returns the user to the landing or login screen.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "recent-1"
+        ],
+        "quotes": [
+          "ok then can u add both and ensure that they work properly?"
+        ]
+      },
+      "acceptanceCriteria": [
+        "A visible Logout control exists within the app UI (not only on the Internet Identity site).",
+        "Clicking Logout clears the Internet Identity session in the app by calling the existing `useInternetIdentity().clear()` flow.",
+        "Logout also clears SweetSteps client-side persisted state used for onboarding and weekly mountain caching (including `OnboardingResultContext` storage and any `localStorage` keys used by the app such as `sweetsteps_current_week` and `sweetsteps_weekly_mountain`).",
+        "After Logout completes, the user is routed to `/` or `/login`, and authenticated-only pages no longer show authenticated data until the user logs in again."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Add an in-app Delete Account action in SweetSteps that deletes the user’s backend record and then logs them out and resets all local SweetSteps state.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "recent-1"
+        ],
+        "quotes": [
+          "ok then can u add both and ensure that they work properly?"
+        ]
+      },
+      "acceptanceCriteria": [
+        "A visible Delete Account control exists within the app UI and is clearly marked as destructive.",
+        "Delete Account requires explicit user confirmation (e.g., a confirmation dialog) before executing.",
+        "On confirmation, the frontend calls the new backend delete endpoint using the authenticated actor, then clears Internet Identity state (`useInternetIdentity().clear()`), clears onboarding/local cached state, and navigates to `/` or `/login`.",
+        "After Delete Account, logging in again with the same Internet Identity principal results in SweetSteps behaving like a fresh user (e.g., no stored backend profile for that principal and onboarding is required again if the app depends on it).",
+        "If the backend delete call fails, the UI shows a clear English error message and does not falsely report success."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Ensure the Logout and Delete Account actions are accessible from the main authenticated experience (at minimum on the primary authenticated pages) and behave consistently across routes.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "recent-1"
+        ],
+        "quotes": [
+          "ok then can u add both and ensure that they work properly?"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Logout/Delete Account controls are accessible without needing to open browser tools (e.g., placed in a header/menu on authenticated pages like Weekly Mountain, Daily, Fridge, and/or Sweet Summit).",
+        "Executing Logout/Delete Account from any of these pages produces the same outcome (session cleared, local state reset, navigation away from authenticated pages).",
+        "No modifications are required to any immutable UI library files under `frontend/src/components/ui`; controls are composed using existing components only."
+      ]
+    }
+  ],
+  "constraints": [
+    "Backend must remain a single Motoko actor in `backend/main.mo` (no additional backend services).",
+    "Do not modify any frontend paths listed in `frontend.immutablePaths` (compose existing UI components instead).",
+    "Use English for any user-facing text."
+  ],
+  "nonGoals": [
+    "Do not attempt to delete or manage Internet Identity anchors on https://identity.ic0.app (only app-local logout and canister-side data deletion).",
+    "Do not add third-party authentication providers beyond Internet Identity.",
+    "Do not implement a full username/password auth system as part of this change."
+  ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

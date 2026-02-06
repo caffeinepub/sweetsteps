@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useOnboardingResult } from '../contexts/OnboardingResultContext';
 import { generateWeeklyMountain, type WeeklyMountainResponse } from '../lib/aiProxyClient';
+import AuthenticatedHeader from '../components/AuthenticatedHeader';
 
 // Helper to get current week identifier (ISO week number)
 function getCurrentWeekId(): string {
@@ -174,17 +175,8 @@ export default function WeeklyMountain() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <header className="w-full border-b border-border bg-card">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center gap-3">
-          <img 
-            src="/assets/generated/mountain-icon.dim_64x64.png" 
-            alt="Mountain" 
-            className="w-10 h-10"
-          />
-          <h1 className="text-2xl font-bold text-foreground">{displayMountain.name}</h1>
-        </div>
-      </header>
+      {/* Header with Logout and Delete Account */}
+      <AuthenticatedHeader title={displayMountain.name} />
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-6 py-8 space-y-8">

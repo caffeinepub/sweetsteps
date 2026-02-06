@@ -1,4 +1,67 @@
 {
   "kind": "feature_evidence_report",
-  "features": []
+  "features": [
+    {
+      "featureId": "feature-add-a-global-in-app-logout-action-in-sweetsteps-that-clears-the-app-s-authenticated-session-state-and-returns-the-user-to-the-landing-or-login-screen",
+      "featureTitle": "Add a global, in-app Logout action in SweetSteps that clears the app’s authenticated session state and returns the user to the landing or login screen.",
+      "files": [
+        "frontend/src/components/AuthenticatedHeader.tsx",
+        "frontend/src/utils/sessionReset.ts"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-an-in-app-delete-account-action-in-sweetsteps-that-deletes-the-user-s-backend-record-and-then-logs-them-out-and-resets-all-local-sweetsteps-state",
+      "featureTitle": "Add an in-app Delete Account action in SweetSteps that deletes the user’s backend record and then logs them out and resets all local SweetSteps state.",
+      "files": [
+        "frontend/src/components/AuthenticatedHeader.tsx",
+        "frontend/src/utils/sessionReset.ts"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-the-logout-and-delete-account-actions-are-accessible-from-the-main-authenticated-experience-at-minimum-on-the-primary-authenticated-pages-and-behave-consistently-across-routes",
+      "featureTitle": "Ensure the Logout and Delete Account actions are accessible from the main authenticated experience (at minimum on the primary authenticated pages) and behave consistently across routes.",
+      "files": [
+        "frontend/src/pages/Daily.tsx",
+        "frontend/src/pages/Fridge.tsx",
+        "frontend/src/pages/SweetSummit.tsx",
+        "frontend/src/pages/WeeklyMountain.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
+      ],
+      "confidence": "high"
+    }
+  ]
 }

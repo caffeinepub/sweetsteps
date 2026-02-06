@@ -1,73 +1,35 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-06T04:15:39.180Z",
-  "summary": "BuildRequest contains no stated requirements or acceptance criteria, but the diff implements extensive changes around Internet Identity auth flow, onboarding routing, diagnostics, UI theming, routing, and SPA fallback behavior.",
+  "generatedAt": "2026-02-06T05:56:57.723Z",
+  "summary": "Diff implements canister-side deletion via a new `deleteCallerUserData()` shared method with existing permission checks, and adds an `AuthenticatedHeader` component exposing in-app Logout and Delete Account actions. Logout clears Internet Identity session (`useInternetIdentity().clear()`), clears onboarding/localStorage cache keys via `clearSweetStepsSession()`, clears React Query cache, and navigates to `/`. Delete Account confirms (via AlertDialog components), calls backend deletion, then performs the same clear/reset and navigation; on failure it shows an English error message.",
   "missing_requirements": [],
   "hallucinated_features": [
     {
-      "description": "Implemented/expanded Internet Identity (II) auth flow logic on Login/Signup including attempt phases, stalled auth detection, mobile patched login, post-auth timeouts, diagnostics, and canister warmup.",
-      "reason": "No requirements were provided in the BuildRequest; these are new behaviors added without an explicit request.",
+      "description": "Adds a new `/signup-test` route.",
+      "reason": "BuildRequest does not request any new routes; scope is limited to in-app Logout/Delete Account flows.",
       "evidence": [
-        "frontend/src/pages/Login.tsx",
-        "frontend/src/pages/Signup.tsx"
+        "frontend-file-summaries.txt (\"frontend/src/App.tsx\": \"...including the new /signup-test route.\")"
       ]
     },
     {
-      "description": "Added/mentioned a new route `/signup-test` and multiple routing/layout changes (TanStack Router root layout and child routes).",
-      "reason": "Not requested (BuildRequest has no requirements).",
+      "description": "Clears TanStack React Query cache during Logout/Delete Account (`queryClient.clear()`).",
+      "reason": "BuildRequest requires clearing Internet Identity session and specific SweetSteps persisted state (OnboardingResultContext storage and localStorage keys), but does not mention React Query cache management.",
       "evidence": [
-        "frontend-file-summaries.txt"
-      ]
-    },
-    {
-      "description": "Changed onboarding flow to rely on localStorage and redirect logic without backend onboarding status calls; related context/provider logging and persistence helpers.",
-      "reason": "Not requested (BuildRequest has no requirements).",
-      "evidence": [
-        "frontend-file-summaries.txt"
-      ]
-    },
-    {
-      "description": "Introduced/changed global UI theme assets: OKLCH chocolate-inspired color tokens, global typography rules, custom Tailwind font families; adjusted carousel/card heights to prevent text clipping.",
-      "reason": "Not requested (BuildRequest has no requirements).",
-      "evidence": [
-        "frontend-file-summaries.txt"
-      ]
-    },
-    {
-      "description": "Added SPA fallback 404 behavior and index.html startup script configuration for `process.env.II_URL` with fallback and warning.",
-      "reason": "Not requested (BuildRequest has no requirements).",
-      "evidence": [
-        "frontend-file-summaries.txt"
-      ]
-    },
-    {
-      "description": "Removed/disabled legacy AI configuration/client, routing AI calls through an external proxy client instead.",
-      "reason": "Not requested (BuildRequest has no requirements).",
-      "evidence": [
-        "frontend-file-summaries.txt"
-      ]
-    },
-    {
-      "description": "Removed password auth provider from RootLayout and wrapped app with onboarding/II callback handler providers.",
-      "reason": "Not requested (BuildRequest has no requirements).",
-      "evidence": [
-        "frontend-file-summaries.txt"
-      ]
-    },
-    {
-      "description": "Added/updated project state metadata describing a pending feature request AR-1 about clearing delegations before Login/Signup and routing based on onboarding completion.",
-      "reason": "BuildRequest itself lists no requirements; this introduces a new feature request record beyond the provided request scope.",
-      "evidence": [
-        "project_state.json"
+        "frontend/src/components/AuthenticatedHeader.tsx"
       ]
     }
   ],
-  "confidence": 0.74,
+  "confidence": 0.72,
   "changed_files": [
+    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/pages/Login.tsx",
-    "frontend/src/pages/Signup.tsx",
+    "frontend/src/components/AuthenticatedHeader.tsx",
+    "frontend/src/pages/Daily.tsx",
+    "frontend/src/pages/Fridge.tsx",
+    "frontend/src/pages/SweetSummit.tsx",
+    "frontend/src/pages/WeeklyMountain.tsx",
+    "frontend/src/utils/sessionReset.ts",
     "project_state.json"
   ]
 }

@@ -5,8 +5,6 @@ import Runtime "mo:core/Runtime";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 
-
-
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
@@ -14,7 +12,6 @@ actor {
   public type UserProfile = {
     name : Text;
     createdAt : Time.Time;
-    // Additional profile fields can be added here
   };
 
   var userProfiles = Map.empty<Principal, UserProfile>();
@@ -38,5 +35,12 @@ actor {
       Runtime.trap("Unauthorized: Can only view your own profile or must be admin");
     };
     userProfiles.get(user);
+  };
+
+  public shared ({ caller }) func deleteCallerUserData() : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can delete their data");
+    };
+    userProfiles.remove(caller);
   };
 };

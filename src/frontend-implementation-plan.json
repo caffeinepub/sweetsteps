@@ -1,6 +1,83 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Untitled request",
-  "requirements": []
+  "title": "In-app Logout and Delete Account UI flows for Internet Identity testing",
+  "requirements": [
+    {
+      "id": "REQ-2",
+      "summary": "Add a global in-app Logout action that clears Internet Identity session plus all SweetSteps client-side cached state and routes back to landing/login.",
+      "acceptanceCriteria": [
+        "A visible Logout control exists within the app UI (not only on the Internet Identity site).",
+        "Clicking Logout clears the Internet Identity session in the app by calling the existing `useInternetIdentity().clear()` flow.",
+        "Logout also clears SweetSteps client-side persisted state used for onboarding and weekly mountain caching (including `OnboardingResultContext` storage and any `localStorage` keys used by the app such as `sweetsteps_current_week` and `sweetsteps_weekly_mountain`).",
+        "After Logout completes, the user is routed to `/` or `/login`, and authenticated-only pages no longer show authenticated data until the user logs in again."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/utils/sessionReset.ts",
+          "operation": "create",
+          "description": "Add a small session reset utility that clears SweetSteps persisted client state (including onboarding storage key and weekly mountain cache keys like `sweetsteps_current_week` and `sweetsteps_weekly_mountain`)."
+        },
+        {
+          "path": "frontend/src/components/AuthenticatedHeader.tsx",
+          "operation": "create",
+          "description": "Create a shared authenticated-page header that includes a visible Logout control wired to `useInternetIdentity().clear()`, clears React Query cache, clears onboarding via `clearOnboardingResult`, runs the session reset utility, and navigates to `/` (or `/login`). Use shadcn-ui components (e.g., Button/Alert) for consistent styling; verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Add an in-app Delete Account action that confirms, calls backend deletion capability via authenticated actor, then logs out and resets local state with clear error handling.",
+      "acceptanceCriteria": [
+        "A visible Delete Account control exists within the app UI and is clearly marked as destructive.",
+        "Delete Account requires explicit user confirmation (e.g., a confirmation dialog) before executing.",
+        "On confirmation, the frontend calls the new backend delete endpoint using the authenticated actor, then clears Internet Identity state (`useInternetIdentity().clear()`), clears onboarding/local cached state, and navigates to `/` or `/login`.",
+        "After Delete Account, logging in again with the same Internet Identity principal results in SweetSteps behaving like a fresh user (e.g., no stored backend profile for that principal and onboarding is required again if the app depends on it).",
+        "If the backend delete call fails, the UI shows a clear English error message and does not falsely report success."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/AuthenticatedHeader.tsx",
+          "operation": "modify",
+          "description": "Add a clearly destructive Delete Account control with explicit confirmation (e.g., browser confirm or existing dialog composition). On confirm, call `actor.deleteCallerUserData()` via `useActor()` when authenticated, handle failures by rendering a clear English error message, and on success perform the same logout + local reset + navigation sequence as Logout. Use shadcn-ui components (e.g., Button/Alert) where appropriate; verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/utils/sessionReset.ts",
+          "operation": "modify",
+          "description": "Ensure the reset helper covers all state that must be cleared for Delete Account (onboarding persisted key plus weekly cache keys) so that post-delete re-login behaves like a fresh user."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Expose Logout and Delete Account actions from the main authenticated experience across primary routes without modifying immutable UI library files.",
+      "acceptanceCriteria": [
+        "Logout/Delete Account controls are accessible without needing to open browser tools (e.g., placed in a header/menu on authenticated pages like Weekly Mountain, Daily, Fridge, and/or Sweet Summit).",
+        "Executing Logout/Delete Account from any of these pages produces the same outcome (session cleared, local state reset, navigation away from authenticated pages).",
+        "No modifications are required to any immutable UI library files under `frontend/src/components/ui`; controls are composed using existing components only."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/WeeklyMountain.tsx",
+          "operation": "modify",
+          "description": "Wire the shared AuthenticatedHeader into Weekly Mountain so Logout/Delete Account are accessible on this primary authenticated page and behave consistently. Use existing composed UI components only; verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/Daily.tsx",
+          "operation": "modify",
+          "description": "Wire the shared AuthenticatedHeader into Daily so Logout/Delete Account are accessible on this primary authenticated page and behave consistently. Use existing composed UI components only; verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/Fridge.tsx",
+          "operation": "modify",
+          "description": "Wire the shared AuthenticatedHeader into Fridge so Logout/Delete Account are accessible on this primary authenticated page and behave consistently. Use existing composed UI components only; verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/SweetSummit.tsx",
+          "operation": "modify",
+          "description": "Wire the shared AuthenticatedHeader into Sweet Summit so Logout/Delete Account are accessible on this primary authenticated page and behave consistently. Use existing composed UI components only; verify the component's usage instructions before implementing."
+        }
+      ]
+    }
+  ]
 }

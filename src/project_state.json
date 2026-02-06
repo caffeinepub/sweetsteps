@@ -1,22 +1,62 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Implement an Internet Identity (II) auth flow where clicking Login/Signup first clears any existing delegation to force a fresh II session (account chooser when applicable), then routes users to Onboarding or Weekly Mountain based on onboarding completion.",
+  "summary": "SweetSteps app using Internet Identity authentication; plan to add in-app Logout and Delete Account flows for testing/resetting user state.",
   "architectural_notes": [
-    "Internet Identity cannot be forced to always show the account chooser; best workaround is to clear local delegation before starting the II auth flow."
+    "Internet Identity anchor cannot be deleted from within the app; Logout should clear app-local auth/session state only.",
+    "Delete Account should delete the user’s backend/canister record; II anchor remains but app treats next login as new user."
   ],
   "known_issues": [],
   "isFixRequest": false,
-  "existing_features": [],
+  "existing_features": [
+    {
+      "id": "feature-add-a-global-in-app-logout-action-in-sweetsteps-that-clears-the-app-s-authenticated-session-state-and-returns-the-user-to-the-landing-or-login-screen",
+      "title": "Add a global, in-app Logout action in SweetSteps that clears the app’s authenticated session state and returns the user to the landing or login screen.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-an-in-app-delete-account-action-in-sweetsteps-that-deletes-the-user-s-backend-record-and-then-logs-them-out-and-resets-all-local-sweetsteps-state",
+      "title": "Add an in-app Delete Account action in SweetSteps that deletes the user’s backend record and then logs them out and resets all local SweetSteps state.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-logout-and-delete-account-actions-are-accessible-from-the-main-authenticated-experience-at-minimum-on-the-primary-authenticated-pages-and-behave-consistently-across-routes",
+      "title": "Ensure the Logout and Delete Account actions are accessible from the main authenticated experience (at minimum on the primary authenticated pages) and behave consistently across routes.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    }
+  ],
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "On Login/Signup with Internet Identity: clear existing delegation first, then start fresh II auth and route to Onboarding (new/incomplete) or Weekly Mountain (completed).",
+      "summary": "Add in-app Logout button to clear SweetSteps auth/local session state and return user to landing/login",
       "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Add in-app Delete Account button to remove the user record from the backend so next login is treated as a new user",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Add a backend endpoint that deletes the currently authenticated user’s stored data in the canister so that the next Internet Identity login is treated as a new user by SweetSteps.",
+      "reqIds": [
+        "REQ-1"
+      ],
       "status": "pending"
     }
   ],
-  "projectName": "Untitled request",
+  "projectName": "SweetSteps",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

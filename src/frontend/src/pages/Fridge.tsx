@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import AuthenticatedHeader from '../components/AuthenticatedHeader';
 
 type Period = 'week' | 'month' | 'allTime';
 
@@ -30,12 +31,8 @@ export default function Fridge() {
 
   return (
     <div className="h-screen bg-background text-foreground flex flex-col overflow-hidden">
-      {/* Header */}
-      <header className="w-full border-b border-border bg-card flex-shrink-0">
-        <div className="max-w-4xl mx-auto px-6 py-4">
-          <h1 className="text-2xl font-bold text-foreground">Your Chocolate Fridge</h1>
-        </div>
-      </header>
+      {/* Header with Logout and Delete Account */}
+      <AuthenticatedHeader title="Your Chocolate Fridge" />
 
       {/* Main Content */}
       <main className="flex-1 overflow-hidden flex flex-col">
