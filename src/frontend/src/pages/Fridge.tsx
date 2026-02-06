@@ -1,113 +1,148 @@
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Loader2, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import AuthenticatedHeader from '../components/AuthenticatedHeader';
-
-type Period = 'week' | 'month' | 'allTime';
-
-// Hardcoded placeholder data for each period
-const inventoryData: Record<Period, { tiny: number; bars: number; slabs: number }> = {
-  week: {
-    tiny: 12,
-    bars: 3,
-    slabs: 1,
-  },
-  month: {
-    tiny: 48,
-    bars: 15,
-    slabs: 5,
-  },
-  allTime: {
-    tiny: 156,
-    bars: 42,
-    slabs: 18,
-  },
-};
+import { useGetRewardsForCaller } from '../hooks/useRewards';
+import { TimeRange } from '../backend';
 
 export default function Fridge() {
-  const [selectedPeriod, setSelectedPeriod] = useState<Period>('week');
+  const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>(TimeRange.week);
+  
+  const { data: inventory, isLoading, error, refetch } = useGetRewardsForCaller(selectedTimeRange);
 
-  const currentInventory = inventoryData[selectedPeriod];
+  const handleTimeRangeChange = (range: TimeRange) => {
+    setSelectedTimeRange(range);
+  };
 
-  return (
-    <div className="h-screen bg-background text-foreground flex flex-col overflow-hidden">
-      {/* Header with Logout and Delete Account */}
-      <AuthenticatedHeader title="Your Chocolate Fridge" />
+  const timeRangeLabels = {
+    [TimeRange.week]: 'This Week',
+    [TimeRange.month]: 'This Month',
+    [TimeRange.all]: 'All Time'
+  };
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-hidden flex flex-col">
-        <div className="max-w-4xl mx-auto px-6 py-8 flex flex-col gap-6 h-full">
-          {/* Period Toggle Buttons */}
-          <div className="flex justify-center gap-2 flex-shrink-0 flex-nowrap">
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6 py-16">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading your chocolate fridge...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6 py-16">
+        <div className="w-full max-w-2xl mx-auto space-y-4">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              {error instanceof Error ? error.message : 'Unable to load chocolate fridge. Please try again.'}
+            </AlertDescription>
+          </Alert>
+          <div className="text-center">
             <Button
-              variant={selectedPeriod === 'week' ? 'default' : 'outline'}
-              size="default"
-              onClick={() => setSelectedPeriod('week')}
-              className="px-4 font-semibold rounded-xl"
+              onClick={() => refetch()}
+              className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground"
             >
-              This Week
+              Try Again
             </Button>
-            <Button
-              variant={selectedPeriod === 'month' ? 'default' : 'outline'}
-              size="default"
-              onClick={() => setSelectedPeriod('month')}
-              className="px-4 font-semibold rounded-xl"
-            >
-              This Month
-            </Button>
-            <Button
-              variant={selectedPeriod === 'allTime' ? 'default' : 'outline'}
-              size="default"
-              onClick={() => setSelectedPeriod('allTime')}
-              className="px-4 font-semibold rounded-xl"
-            >
-              All Time
-            </Button>
-          </div>
-
-          {/* Inventory Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 flex-1">
-            {/* Tiny Chocolates */}
-            <Card className="bg-card border-border">
-              <CardContent className="p-4 h-full flex items-center gap-4">
-                <div className="text-4xl flex-shrink-0">🍫</div>
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground font-medium mb-1">Tiny</p>
-                  <p className="text-3xl font-bold text-foreground">{currentInventory.tiny}</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Bars */}
-            <Card className="bg-card border-border">
-              <CardContent className="p-4 h-full flex items-center gap-4">
-                <div className="text-4xl flex-shrink-0">🍫</div>
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground font-medium mb-1">Bars</p>
-                  <p className="text-3xl font-bold text-foreground">{currentInventory.bars}</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Slabs */}
-            <Card className="bg-card border-border">
-              <CardContent className="p-4 h-full flex items-center gap-4">
-                <div className="text-4xl flex-shrink-0">🍫</div>
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground font-medium mb-1">Slabs</p>
-                  <p className="text-3xl font-bold text-foreground">{currentInventory.slabs}</p>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Header with Logout and Delete Account */}
+      <AuthenticatedHeader title="Chocolate Fridge" />
+
+      {/* Main Content */}
+      <main className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+        {/* Time Range Selector */}
+        <div className="flex justify-center gap-2">
+          {Object.values(TimeRange).map((range) => (
+            <Button
+              key={range}
+              variant={selectedTimeRange === range ? 'default' : 'outline'}
+              onClick={() => handleTimeRangeChange(range)}
+              className="rounded-xl"
+            >
+              {timeRangeLabels[range]}
+            </Button>
+          ))}
+        </div>
+
+        {/* Reward Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Tiny Chocolates */}
+          <Card className="bg-card border-border">
+            <CardContent className="p-6 space-y-4 text-center">
+              <div className="text-5xl">🍫</div>
+              <div>
+                <p className="text-3xl font-bold text-foreground">
+                  {inventory ? Number(inventory.tinyChocolateCount) : 0}
+                </p>
+                <p className="text-sm text-muted-foreground">Tiny Chocolates</p>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Earned from daily tasks
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Chocolate Bars */}
+          <Card className="bg-card border-border">
+            <CardContent className="p-6 space-y-4 text-center">
+              <div className="text-5xl">🍫</div>
+              <div>
+                <p className="text-3xl font-bold text-foreground">
+                  {inventory ? Number(inventory.chocolateBarCount) : 0}
+                </p>
+                <p className="text-sm text-muted-foreground">Chocolate Bars</p>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Earned from weekly goals
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Chocolate Slabs */}
+          <Card className="bg-card border-border">
+            <CardContent className="p-6 space-y-4 text-center">
+              <div className="text-5xl">🍫</div>
+              <div>
+                <p className="text-3xl font-bold text-foreground">
+                  {inventory ? Number(inventory.chocolateSlabCount) : 0}
+                </p>
+                <p className="text-sm text-muted-foreground">Chocolate Slabs</p>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Earned from big goals
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Summary Message */}
+        <Card className="bg-card border-border">
+          <CardContent className="p-6 text-center">
+            <p className="text-muted-foreground">
+              Keep climbing your mountains to earn more sweet rewards! 🏔️
+            </p>
+          </CardContent>
+        </Card>
       </main>
 
       {/* Footer */}
-      <footer className="w-full py-6 px-6 border-t border-border flex-shrink-0">
+      <footer className="w-full py-8 px-6 border-t border-border mt-12">
         <div className="max-w-4xl mx-auto text-center">
           <p className="text-muted-foreground text-xs md:text-sm">
-            © 2026. Built with love using{' '}
+            © 2026. Built with 🤎 using{' '}
             <a 
               href="https://caffeine.ai" 
               target="_blank" 

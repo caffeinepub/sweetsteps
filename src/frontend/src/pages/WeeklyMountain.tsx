@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,12 +20,11 @@ function getCurrentWeekId(): string {
 
 export default function WeeklyMountain() {
   const navigate = useNavigate();
-  const { onboardingResult, clearOnboardingResult } = useOnboardingResult();
+  const { onboardingResult } = useOnboardingResult();
 
   const [mountain, setMountain] = useState<WeeklyMountainResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isRestarting, setIsRestarting] = useState(false);
 
   // Log onboarding result on mount for debugging
   useEffect(() => {
@@ -89,15 +88,11 @@ export default function WeeklyMountain() {
     window.location.reload();
   };
 
-  const handleRestartOnboarding = () => {
-    setIsRestarting(true);
-    
-    // Clear persisted onboarding result
-    clearOnboardingResult();
-    
-    // Navigate to onboarding
-    navigate({ to: '/onboarding' });
-  };
+  const handleStartOnboarding = useCallback(() => {
+    console.log('[WeeklyMountain] Start Onboarding clicked, navigating to /onboarding');
+    // Navigate to onboarding step 1
+    navigate({ to: '/onboarding', replace: true });
+  }, [navigate]);
 
   if (isLoading) {
     return (
@@ -142,23 +137,16 @@ export default function WeeklyMountain() {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Onboarding Incomplete</AlertTitle>
             <AlertDescription>
-              You haven't completed onboarding yet. Let's get you started!
+              You haven't finished onboarding yet. Let's get you started!
             </AlertDescription>
           </Alert>
           <div className="text-center">
             <Button
-              onClick={handleRestartOnboarding}
-              disabled={isRestarting}
+              onClick={handleStartOnboarding}
+              data-testid="onboarding-incomplete-start-onboarding"
               className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground"
             >
-              {isRestarting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Starting...
-                </>
-              ) : (
-                'Start Onboarding'
-              )}
+              Start Onboarding
             </Button>
           </div>
         </div>
@@ -245,7 +233,7 @@ export default function WeeklyMountain() {
       <footer className="w-full py-8 px-6 border-t border-border mt-12">
         <div className="max-w-4xl mx-auto text-center">
           <p className="text-muted-foreground text-xs md:text-sm">
-            © 2026. Built with love using{' '}
+            © 2026. Built with 🤎 using{' '}
             <a 
               href="https://caffeine.ai" 
               target="_blank" 

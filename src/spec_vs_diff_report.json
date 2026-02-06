@@ -1,53 +1,49 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-06T11:03:42.335Z",
-  "summary": "BuildRequest contains no stated requirements or acceptance criteria. The diff implements multiple new backend and frontend behaviors (user profiles with access control, display-name gating, signup/auth flow changes, and SPA/deep-link support) that are not traceable to any explicit request in the BuildRequest.",
-  "missing_requirements": [],
+  "generatedAt": "2026-02-06T15:03:40.313Z",
+  "summary": "The diff does not show any changes to the actual \"Onboarding Incomplete\" screen or its \"Start Onboarding\" button. Instead, it adds onboarding-step reset logic in `Onboarding.tsx` and adds a `handleStartOnboarding` navigation handler in `WeeklyMountain.tsx`, but there is no evidence the onboarding-incomplete CTA is fixed or that a stable `data-testid` was added.",
+  "missing_requirements": [
+    {
+      "id": "REQ-11",
+      "requirement": "Fix the Onboarding Incomplete screen CTA so clicking \"Start Onboarding\" always navigates to `/onboarding` reliably (not a no-op), works on repeated clicks, and is not blocked by redirects/loading/stale handlers; no unintended redirect back to `/weekly-mountain` while onboarding-incomplete.",
+      "reason": "No diff evidence shows edits to the Onboarding Incomplete screen or its \"Start Onboarding\" button wiring. The only navigation-to-`/onboarding` handler shown is in `WeeklyMountain.tsx`, and `Onboarding.tsx` changes do not demonstrate fixing the CTA on the onboarding-incomplete screen itself.",
+      "evidence": [
+        "frontend/src/pages/WeeklyMountain.tsx",
+        "frontend/src/pages/Onboarding.tsx"
+      ]
+    },
+    {
+      "id": "REQ-12",
+      "requirement": "Add a stable `data-testid` attribute to the \"Start Onboarding\" button on the Onboarding Incomplete screen that is unique and not dynamic.",
+      "reason": "No `data-testid` addition is shown anywhere in the provided modified files, and no Onboarding Incomplete screen file is included/modified in the diff summary.",
+      "evidence": [
+        "frontend/src/pages/WeeklyMountain.tsx",
+        "frontend/src/pages/Onboarding.tsx"
+      ]
+    }
+  ],
   "hallucinated_features": [
     {
-      "description": "Backend user profile storage with permission checks (save/view/delete) using AccessControl state and MixinAuthorization.",
-      "reason": "No requirements were specified in the BuildRequest, but new authorization and profile CRUD logic was added.",
+      "description": "Add a \"Start Onboarding\" click handler in `WeeklyMountain` that navigates to `/onboarding` with `replace: true`, plus additional debug logging.",
+      "reason": "The BuildRequest is specifically about the \"Onboarding Incomplete\" screen CTA and adding a `data-testid` there; it does not request changes to the Weekly Mountain page or a new handler there.",
       "evidence": [
-        "backend/main.mo"
+        "frontend/src/pages/WeeklyMountain.tsx"
       ]
     },
     {
-      "description": "Post-auth display name gating UI that prompts new accounts to set/skip display name and navigates to /onboarding, using session flags.",
-      "reason": "No requirements were specified in the BuildRequest, but a new gate component and related flow behavior were added.",
+      "description": "Reset onboarding flow to step 1 on component mount with a console log in `Onboarding.tsx`.",
+      "reason": "While related to ensuring onboarding starts at step 1 after navigation, the BuildRequest does not ask for a mount-reset behavior change; it only asks to fix the Onboarding Incomplete screen button navigation and add a `data-testid`.",
       "evidence": [
-        "frontend/src/components/auth/PostAuthDisplayNameGate.tsx"
-      ]
-    },
-    {
-      "description": "Signup page auth-flow changes including new attempt phases, backend profile check integration, and setting a 'new account' session flag to drive display-name prompting.",
-      "reason": "No requirements were specified in the BuildRequest, but signup/auth flow logic was modified.",
-      "evidence": [
-        "frontend/src/pages/Signup.tsx",
-        "frontend-file-summaries.txt"
-      ]
-    },
-    {
-      "description": "Application-wide integration of PostAuthDisplayNameGate via RootLayout (as described in summaries).",
-      "reason": "No requirements were specified in the BuildRequest, but global layout behavior was changed to include display-name prompting.",
-      "evidence": [
-        "frontend-file-summaries.txt"
-      ]
-    },
-    {
-      "description": "SPA/deep-linking support via a 404.html redirect fallback (as described in summaries).",
-      "reason": "No requirements were specified in the BuildRequest, but deployment/hosting behavior was modified to handle 404 deep links.",
-      "evidence": [
-        "frontend-file-summaries.txt"
+        "frontend/src/pages/Onboarding.tsx"
       ]
     }
   ],
   "confidence": 0.74,
   "changed_files": [
-    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/auth/PostAuthDisplayNameGate.tsx",
-    "frontend/src/pages/Signup.tsx",
+    "frontend/src/pages/Onboarding.tsx",
+    "frontend/src/pages/WeeklyMountain.tsx",
     "project_state.json"
   ]
 }

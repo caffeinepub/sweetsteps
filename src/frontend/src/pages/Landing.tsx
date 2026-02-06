@@ -129,7 +129,7 @@ export default function Landing() {
             No pressure. Just progress.
           </p>
           <p className="text-muted-foreground text-xs md:text-sm">
-            © 2026. Built with love using{' '}
+            © 2026. Built with 🤎 using{' '}
             <a 
               href="https://caffeine.ai" 
               target="_blank" 

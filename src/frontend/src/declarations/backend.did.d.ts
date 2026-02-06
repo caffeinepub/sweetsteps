@@ -10,17 +10,30 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface InventorySummary {
+  'chocolateBarCount' : bigint,
+  'chocolateSlabCount' : bigint,
+  'tinyChocolateCount' : bigint,
+}
+export type RewardType = { 'chocolateSlab' : null } |
+  { 'tinyChocolate' : null } |
+  { 'chocolateBar' : null };
 export type Time = bigint;
+export type TimeRange = { 'all' : null } |
+  { 'month' : null } |
+  { 'week' : null };
 export interface UserProfile { 'name' : string, 'createdAt' : Time }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'addReward' : ActorMethod<[RewardType], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'deleteCallerUserData' : ActorMethod<[], undefined>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getRewardsForCaller' : ActorMethod<[TimeRange], InventorySummary>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'ping' : ActorMethod<[], boolean>,

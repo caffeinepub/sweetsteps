@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Clock, Loader2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,8 @@ import TaskModal from '@/components/TaskModal';
 import { useOnboardingResult } from '../contexts/OnboardingResultContext';
 import { generateDailySteps, type DailyTask } from '../lib/aiProxyClient';
 import AuthenticatedHeader from '../components/AuthenticatedHeader';
+import { useAddReward } from '../hooks/useRewards';
+import { RewardType } from '../backend';
 
 // Helper to format today's date
 const formatTodayDate = (): string => {
@@ -24,6 +26,11 @@ export default function Daily() {
   const [error, setError] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<DailyTask | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  const addRewardMutation = useAddReward();
+  
+  // Track which tasks have been rewarded in this session to prevent duplicates
+  const rewardedTasksRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchDailySteps = async () => {
@@ -66,9 +73,30 @@ export default function Daily() {
     setSelectedTask(null);
   };
 
-  const handleTaskComplete = () => {
-    // Completion flow - currently no backend persistence
-    console.log('Task completed:', selectedTask?.title);
+  const handleTaskComplete = async () => {
+    if (!selectedTask) return;
+    
+    // Create a unique identifier for this task completion
+    const taskId = `${selectedTask.title}-${formatTodayDate()}`;
+    
+    // Check if we've already rewarded this task today
+    if (rewardedTasksRef.current.has(taskId)) {
+      console.log('Task already rewarded today:', taskId);
+      return;
+    }
+    
+    // Mark as rewarded before making the call to prevent duplicate clicks
+    rewardedTasksRef.current.add(taskId);
+    
+    try {
+      // Award tiny chocolate for completing a daily task
+      await addRewardMutation.mutateAsync(RewardType.tinyChocolate);
+      console.log('Tiny chocolate awarded for task:', selectedTask.title);
+    } catch (err: any) {
+      console.error('Error awarding chocolate:', err);
+      // Remove from rewarded set on error so user can retry
+      rewardedTasksRef.current.delete(taskId);
+    }
   };
 
   const handleRetry = () => {
@@ -143,7 +171,7 @@ export default function Daily() {
         <footer className="w-full py-8 px-6 border-t border-border mt-12">
           <div className="max-w-4xl mx-auto text-center">
             <p className="text-muted-foreground text-xs md:text-sm">
-              © 2026. Built with love using{' '}
+              © 2026. Built with 🤎 using{' '}
               <a 
                 href="https://caffeine.ai" 
                 target="_blank" 
@@ -191,7 +219,7 @@ export default function Daily() {
       <footer className="w-full py-8 px-6 border-t border-border mt-12">
         <div className="max-w-4xl mx-auto text-center">
           <p className="text-muted-foreground text-xs md:text-sm">
-            © 2026. Built with love using{' '}
+            © 2026. Built with 🤎 using{' '}
             <a 
               href="https://caffeine.ai" 
               target="_blank" 

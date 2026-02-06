@@ -1,6 +1,44 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Untitled request",
-  "requirements": []
+  "title": "Fix Onboarding Incomplete CTA navigation reliability",
+  "requirements": [
+    {
+      "id": "REQ-11",
+      "summary": "Ensure the Onboarding Incomplete screen CTA always navigates authenticated onboarding-incomplete users to `/onboarding` (step 1) reliably, including on repeated clicks, without redirecting back to other pages.",
+      "acceptanceCriteria": [
+        "Given an authenticated user with no completed onboarding profile, when the app shows the \"Onboarding Incomplete\" screen, clicking \"Start Onboarding\" navigates to `/onboarding`.",
+        "After navigation, the onboarding UI is visible and starts at step 1 (e.g., shows \"Step 1 of 3\" and the step-1 prompt).",
+        "The click action is not a no-op: navigation occurs without requiring a page refresh, and repeated clicks behave consistently.",
+        "No unintended redirect sends the user back to `/weekly-mountain` or any other page when they are onboarding-incomplete."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/WeeklyMountain.tsx",
+          "operation": "modify",
+          "description": "Fix the \"Start Onboarding\" CTA on the Onboarding Incomplete screen to use a stable, repeatable navigation handler that always routes to `/onboarding` (e.g., use a memoized click handler that prevents default/propagation and triggers router navigation with a consistent replace/push strategy). Ensure the CTA cannot become a no-op due to re-renders, loading state transitions, or stale closures. Use the shadcn-ui Button component for the CTA presentation (do not edit `frontend/src/components/ui/*`). Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/Onboarding.tsx",
+          "operation": "modify",
+          "description": "Confirm the `/onboarding` page reliably shows step 1 on fresh navigation from the Onboarding Incomplete CTA (no unexpected redirects for onboarding-incomplete authenticated users, and no state persistence that would skip step 1). If necessary, add a small defensive reset on mount/navigation so the first render after navigating to `/onboarding` starts at step 1."
+        }
+      ]
+    },
+    {
+      "id": "REQ-12",
+      "summary": "Add a stable test hook (`data-testid`) to uniquely identify the Onboarding Incomplete \"Start Onboarding\" button.",
+      "acceptanceCriteria": [
+        "The \"Start Onboarding\" button on the Onboarding Incomplete screen includes a `data-testid` attribute that uniquely identifies it.",
+        "The `data-testid` does not change across renders and does not depend on dynamic values (like principal)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/WeeklyMountain.tsx",
+          "operation": "modify",
+          "description": "Add a stable `data-testid` attribute (e.g., `onboarding-incomplete-start-onboarding`) to the \"Start Onboarding\" button rendered in the Onboarding Incomplete screen so automated tests can reliably select it. Use the existing shadcn-ui Button component without modifying any files under `frontend/src/components/ui`. Verify the component's usage instructions before implementing."
+        }
+      ]
+    }
+  ]
 }

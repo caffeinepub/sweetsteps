@@ -9,7 +9,6 @@ import { useMobileInternetIdentityLoginPatched } from '../hooks/useMobileInterne
 import { useAuthFlowDiagnostics } from '../hooks/useAuthFlowDiagnostics';
 import { useCanisterWarmup } from '../hooks/useCanisterWarmup';
 import { usePostAuthTimeout } from '../hooks/usePostAuthTimeout';
-import { useAuthPageAutoredirect } from '../hooks/useAuthPageAutoredirect';
 import { isIdentityValid, isSessionStale } from '../utils/identityValidation';
 import { getPlatformInfo, isChromeAndroid } from '../utils/platform';
 import { Button } from '@/components/ui/button';
@@ -21,6 +20,8 @@ import { AuthDiagnosticsPanel } from '../components/auth/AuthDiagnosticsPanel';
 import { AuthStatusBanner } from '../components/auth/AuthStatusBanner';
 import { CanisterWarmupBanner } from '../components/auth/CanisterWarmupBanner';
 import { getUrlParameter } from '../utils/urlParams';
+
+const SWEET_SUMMIT_SEEN_KEY = 'sweetsteps_sweet_summit_seen';
 
 type AttemptPhase = 'idle' | 'connecting' | 'validating' | 'checking-access' | 'redirecting' | 'error';
 
@@ -63,9 +64,6 @@ export default function Login() {
   // Check for debug mode
   const debugAuth = getUrlParameter('debugAuth') === '1';
   const platformInfo = getPlatformInfo();
-
-  // Auto-redirect if already authenticated
-  const { isRedirecting } = useAuthPageAutoredirect();
 
   // Post-auth timeout for validation phase
   const validationTimeout = usePostAuthTimeout({
@@ -272,13 +270,27 @@ export default function Login() {
         
         onboardingCheckTimeout.reset();
         setAttemptPhase('redirecting');
-        diagnostics.transitionStep('navigation', { destination: hasCompletedOnboarding ? '/weekly-mountain' : '/onboarding' });
         
         if (hasCompletedOnboarding) {
           // User has completed onboarding
-          navigate({ to: '/weekly-mountain' });
+          // Check if they've seen Sweet Summit
+          const hasSeenSweetSummit = localStorage.getItem(SWEET_SUMMIT_SEEN_KEY);
+          
+          if (hasSeenSweetSummit === 'false') {
+            // First login after onboarding - show Sweet Summit
+            console.log('[Login] First login after onboarding, navigating to /sweet-summit');
+            diagnostics.transitionStep('navigation', { destination: '/sweet-summit' });
+            navigate({ to: '/sweet-summit' });
+          } else {
+            // Subsequent login - go to weekly mountain
+            console.log('[Login] Returning user, navigating to /weekly-mountain');
+            diagnostics.transitionStep('navigation', { destination: '/weekly-mountain' });
+            navigate({ to: '/weekly-mountain' });
+          }
         } else {
           // User has not completed onboarding
+          console.log('[Login] Onboarding incomplete, navigating to /onboarding');
+          diagnostics.transitionStep('navigation', { destination: '/onboarding' });
           navigate({ to: '/onboarding' });
         }
         
@@ -413,8 +425,8 @@ export default function Login() {
       }
     } else {
       // Use standard desktop login path
-      // Call login() immediately with no awaits or timers before it
-      // This preserves the user gesture for Chrome's popup requirements
+      // Internet Identity will automatically show the identity chooser
+      // which displays existing identities or allows creating a new one
       iiLogin();
     }
   }, [startAttempt, iiLogin, mobileLogin, endAttempt, diagnostics]);
@@ -435,11 +447,18 @@ export default function Login() {
       const hasCompletedOnboarding = userProfile !== null;
       onboardingCheckTimeout.reset();
       setAttemptPhase('redirecting');
-      diagnostics.transitionStep('navigation', { destination: hasCompletedOnboarding ? '/weekly-mountain' : '/onboarding' });
       
       if (hasCompletedOnboarding) {
-        navigate({ to: '/weekly-mountain' });
+        const hasSeenSweetSummit = localStorage.getItem(SWEET_SUMMIT_SEEN_KEY);
+        if (hasSeenSweetSummit === 'false') {
+          diagnostics.transitionStep('navigation', { destination: '/sweet-summit' });
+          navigate({ to: '/sweet-summit' });
+        } else {
+          diagnostics.transitionStep('navigation', { destination: '/weekly-mountain' });
+          navigate({ to: '/weekly-mountain' });
+        }
       } else {
+        diagnostics.transitionStep('navigation', { destination: '/onboarding' });
         navigate({ to: '/onboarding' });
       }
       diagnostics.completeAttempt('success', 'Retry successful');
@@ -510,22 +529,6 @@ export default function Login() {
 
   // Show stalled help when stalled OR when in error phase with mobile login error
   const showHelp = stalledState.isStalled || (attemptPhase === 'error' && mobileLoginError);
-
-  // If auto-redirecting, show a loading state
-  if (isRedirecting) {
-    return (
-      <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6 py-16">
-        <div className="w-full max-w-md mx-auto space-y-4">
-          <Card className="bg-transparent border-0 shadow-none">
-            <CardContent className="flex flex-col items-center justify-center py-12 space-y-4">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              <p className="text-muted-foreground">Redirecting...</p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6 py-16">

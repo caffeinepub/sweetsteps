@@ -1,10 +1,57 @@
 {
   "kind": "build_request",
-  "title": "Untitled request",
-  "priority": "normal",
-  "requirements": [],
-  "constraints": [],
-  "nonGoals": [],
+  "title": "Fix 'Start Onboarding' button on the Onboarding Incomplete screen",
+  "priority": "high",
+  "requirements": [
+    {
+      "id": "REQ-11",
+      "text": "Fix the Onboarding Incomplete screen shown to already-authenticated users who have not finished onboarding so that clicking the \"Start Onboarding\" button always navigates to the first step of onboarding at `/onboarding` (and does not no-op). This must work reliably on repeated clicks and must not be blocked by any redirects, loading states, or stale navigation handlers.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4",
+          "msg-6"
+        ],
+        "quotes": [
+          "When i click on start Onboarding it does nothing",
+          "Yes. So now please fix that"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Given an authenticated user with no completed onboarding profile, when the app shows the \"Onboarding Incomplete\" screen, clicking \"Start Onboarding\" navigates to `/onboarding`.",
+        "After navigation, the onboarding UI is visible and starts at step 1 (e.g., shows \"Step 1 of 3\" and the step-1 prompt).",
+        "The click action is not a no-op: navigation occurs without requiring a page refresh, and repeated clicks behave consistently.",
+        "No unintended redirect sends the user back to `/weekly-mountain` or any other page when they are onboarding-incomplete."
+      ]
+    },
+    {
+      "id": "REQ-12",
+      "text": "Add a stable test hook for the Onboarding Incomplete CTA so it can be verified (e.g., add a `data-testid` on the \"Start Onboarding\" button rendered by the Onboarding Incomplete screen).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4",
+          "msg-6"
+        ],
+        "quotes": [
+          "When i click on start Onboarding it does nothing",
+          "Yes. So now please fix that"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The \"Start Onboarding\" button on the Onboarding Incomplete screen includes a `data-testid` attribute that uniquely identifies it.",
+        "The `data-testid` does not change across renders and does not depend on dynamic values (like principal)."
+      ]
+    }
+  ],
+  "constraints": [
+    "Do not edit any files under `frontend/src/components/ui` (Shadcn UI components are read-only).",
+    "Keep the backend as a single Motoko actor; no backend changes are required for this fix."
+  ],
+  "nonGoals": [
+    "Do not redesign the onboarding flow UI or change onboarding step content.",
+    "Do not change Internet Identity authentication logic beyond what is necessary to ensure this button navigates correctly."
+  ],
   "imageRequirements": {
     "required": [],
     "edits": []

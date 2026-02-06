@@ -8,6 +8,11 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
+export const RewardType = IDL.Variant({
+  'chocolateSlab' : IDL.Null,
+  'tinyChocolate' : IDL.Null,
+  'chocolateBar' : IDL.Null,
+});
 export const UserRole = IDL.Variant({
   'admin' : IDL.Null,
   'user' : IDL.Null,
@@ -18,13 +23,25 @@ export const UserProfile = IDL.Record({
   'name' : IDL.Text,
   'createdAt' : Time,
 });
+export const TimeRange = IDL.Variant({
+  'all' : IDL.Null,
+  'month' : IDL.Null,
+  'week' : IDL.Null,
+});
+export const InventorySummary = IDL.Record({
+  'chocolateBarCount' : IDL.Nat,
+  'chocolateSlabCount' : IDL.Nat,
+  'tinyChocolateCount' : IDL.Nat,
+});
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  'addReward' : IDL.Func([RewardType], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'deleteCallerUserData' : IDL.Func([], [], []),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+  'getRewardsForCaller' : IDL.Func([TimeRange], [InventorySummary], ['query']),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
       [IDL.Opt(UserProfile)],
@@ -38,6 +55,11 @@ export const idlService = IDL.Service({
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
+  const RewardType = IDL.Variant({
+    'chocolateSlab' : IDL.Null,
+    'tinyChocolate' : IDL.Null,
+    'chocolateBar' : IDL.Null,
+  });
   const UserRole = IDL.Variant({
     'admin' : IDL.Null,
     'user' : IDL.Null,
@@ -45,13 +67,29 @@ export const idlFactory = ({ IDL }) => {
   });
   const Time = IDL.Int;
   const UserProfile = IDL.Record({ 'name' : IDL.Text, 'createdAt' : Time });
+  const TimeRange = IDL.Variant({
+    'all' : IDL.Null,
+    'month' : IDL.Null,
+    'week' : IDL.Null,
+  });
+  const InventorySummary = IDL.Record({
+    'chocolateBarCount' : IDL.Nat,
+    'chocolateSlabCount' : IDL.Nat,
+    'tinyChocolateCount' : IDL.Nat,
+  });
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    'addReward' : IDL.Func([RewardType], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'deleteCallerUserData' : IDL.Func([], [], []),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+    'getRewardsForCaller' : IDL.Func(
+        [TimeRange],
+        [InventorySummary],
+        ['query'],
+      ),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(UserProfile)],

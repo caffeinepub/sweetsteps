@@ -1,4 +1,44 @@
 {
   "kind": "feature_evidence_report",
-  "features": []
+  "features": [
+    {
+      "featureId": "feature-fix-the-onboarding-incomplete-screen-shown-to-already-authenticated-users-who-have-not-finished-onboarding-so-that-clicking-the-start-onboarding-button-always-navigates-to-the-first-step-of-onboarding-at-onboarding-and-does-not-no-op-this-must-work-reliably-on-repeated-clicks-and-must-not-be-blocked-by-any-redirects-loading-states-or-stale-navigation-handlers",
+      "featureTitle": "Fix the Onboarding Incomplete screen shown to already-authenticated users who have not finished onboarding so that clicking the \"Start Onboarding\" button always navigates to the first step of onboarding at `/onboarding` (and does not no-op). This must work reliably on repeated clicks and must not be blocked by any redirects, loading states, or stale navigation handlers.",
+      "files": [
+        "frontend/src/pages/Onboarding.tsx",
+        "frontend/src/pages/WeeklyMountain.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-11"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-a-stable-test-hook-for-the-onboarding-incomplete-cta-so-it-can-be-verified-e-g-add-a-data-testid-on-the-start-onboarding-button-rendered-by-the-onboarding-incomplete-screen",
+      "featureTitle": "Add a stable test hook for the Onboarding Incomplete CTA so it can be verified (e.g., add a `data-testid` on the \"Start Onboarding\" button rendered by the Onboarding Incomplete screen).",
+      "files": [
+        "frontend/src/pages/WeeklyMountain.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-12"
+      ],
+      "confidence": "high"
+    }
+  ]
 }

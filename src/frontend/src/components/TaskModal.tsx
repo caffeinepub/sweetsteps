@@ -20,6 +20,7 @@ export default function TaskModal({ isOpen, task, onClose, onComplete }: TaskMod
   const [selectedMinutes, setSelectedMinutes] = useState<number>(task.estimatedMinutes);
   const [remainingSeconds, setRemainingSeconds] = useState<number>(0);
   const [timerState, setTimerState] = useState<TimerState>('idle');
+  const [isCompleting, setIsCompleting] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Reset state when modal closes or task changes
@@ -72,6 +73,7 @@ export default function TaskModal({ isOpen, task, onClose, onComplete }: TaskMod
     setTimerState('idle');
     setRemainingSeconds(0);
     setSelectedMinutes(Math.min(Math.max(task.estimatedMinutes, 5), 60));
+    setIsCompleting(false);
   };
 
   const handleStartTimer = () => {
@@ -91,10 +93,19 @@ export default function TaskModal({ isOpen, task, onClose, onComplete }: TaskMod
     resetTimer();
   };
 
-  const handleYes = () => {
-    onComplete();
-    onClose();
-    // Reset will happen via useEffect when isOpen becomes false
+  const handleYes = async () => {
+    // Prevent multiple rapid submissions
+    if (isCompleting) return;
+    
+    setIsCompleting(true);
+    try {
+      await onComplete();
+      onClose();
+      // Reset will happen via useEffect when isOpen becomes false
+    } catch (error) {
+      console.error('Error completing task:', error);
+      setIsCompleting(false);
+    }
   };
 
   const handleNo = () => {
@@ -239,13 +250,15 @@ export default function TaskModal({ isOpen, task, onClose, onComplete }: TaskMod
               <div className="flex gap-3">
                 <Button
                   onClick={handleYes}
-                  className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground py-6 rounded-xl font-semibold shadow-lg"
+                  disabled={isCompleting}
+                  className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground py-6 rounded-xl font-semibold shadow-lg disabled:opacity-50"
                   size="lg"
                 >
-                  Yes, I Finished! 🍫
+                  {isCompleting ? 'Awarding...' : 'Yes, I Finished! 🍫'}
                 </Button>
                 <Button
                   onClick={handleNo}
+                  disabled={isCompleting}
                   variant="outline"
                   className="flex-1 py-6 rounded-xl font-semibold"
                   size="lg"

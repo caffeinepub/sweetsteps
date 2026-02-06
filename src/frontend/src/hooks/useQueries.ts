@@ -58,7 +58,7 @@ export function useDeleteCallerUserData() {
       return actor.deleteCallerUserData();
     },
     onSuccess: () => {
-      // Clear all queries after deletion
+      // Clear all queries after deletion including rewards
       queryClient.clear();
     },
   });

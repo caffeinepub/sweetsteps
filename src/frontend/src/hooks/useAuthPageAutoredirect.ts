@@ -5,12 +5,15 @@ import { useActor } from './useActor';
 import { useGetCallerUserProfile } from './useQueries';
 import { isIdentityValid } from '../utils/identityValidation';
 
+const SWEET_SUMMIT_SEEN_KEY = 'sweetsteps_sweet_summit_seen';
+
 /**
  * Hook that automatically redirects authenticated users away from /login and /signup
- * based on their backend profile status (onboarding completion).
+ * based on their backend profile status (onboarding completion) and Sweet Summit seen status.
  * 
- * - If profile exists: redirect to /weekly-mountain
  * - If no profile: redirect to /onboarding
+ * - If profile exists and Sweet Summit not seen: redirect to /sweet-summit
+ * - If profile exists and Sweet Summit seen: redirect to /weekly-mountain
  */
 export function useAuthPageAutoredirect() {
   const { identity, isInitializing } = useInternetIdentity();
@@ -40,7 +43,16 @@ export function useAuthPageAutoredirect() {
 
     if (userProfile !== null) {
       // Profile exists - user has completed onboarding
-      navigate({ to: '/weekly-mountain' });
+      // Check if they've seen Sweet Summit
+      const hasSeenSweetSummit = localStorage.getItem(SWEET_SUMMIT_SEEN_KEY);
+      
+      if (hasSeenSweetSummit === 'false') {
+        // First login after onboarding - show Sweet Summit
+        navigate({ to: '/sweet-summit' });
+      } else {
+        // Subsequent login - go to weekly mountain
+        navigate({ to: '/weekly-mountain' });
+      }
     } else {
       // No profile - user needs to complete onboarding
       navigate({ to: '/onboarding' });

@@ -1,9 +1,7 @@
 /**
  * Internet Identity Authorize Callback Handler
  * Detects and handles the #authorize=<principal> callback from II OAuth flow
- * Routes to /weekly-mountain if onboarding complete AND user has seen Sweet Summit
- * Routes to /onboarding if onboarding not complete
- * Does NOT auto-redirect on first login after onboarding (lets user see Sweet Summit)
+ * Routes based on onboarding completion and Sweet Summit seen status
  * CRITICAL: Only runs if user initiated auth in current visit (via sessionStorage flag)
  * 
  * NOTE: This handler is now non-blocking and does not interfere with Signup/Login pages
@@ -52,19 +50,18 @@ export function InternetIdentityAuthorizeCallbackHandler() {
       // Check if user has completed onboarding (has a profile in backend)
       if (userProfile !== null) {
         // User has completed onboarding
-        // Check if this is first login (Sweet Summit not yet seen)
+        // Check Sweet Summit seen status
         const hasSeenSweetSummit = localStorage.getItem(SWEET_SUMMIT_SEEN_KEY);
         
         if (hasSeenSweetSummit === 'false') {
-          // First login after onboarding - do NOT auto-redirect
-          // Let the onboarding flow show Sweet Summit naturally
-          console.log('First login after onboarding detected, not auto-redirecting (will show Sweet Summit)');
-          return;
+          // First login after onboarding - show Sweet Summit
+          console.log('First login after onboarding, navigating to /sweet-summit');
+          navigate({ to: '/sweet-summit' });
+        } else {
+          // Subsequent login - go to weekly mountain
+          console.log('Onboarding complete and Sweet Summit seen, navigating to /weekly-mountain');
+          navigate({ to: '/weekly-mountain' });
         }
-        
-        // Subsequent login - auto-redirect to weekly mountain
-        console.log('Onboarding complete and Sweet Summit seen, navigating to /weekly-mountain');
-        navigate({ to: '/weekly-mountain' });
       } else {
         // User has not completed onboarding
         console.log('Onboarding incomplete, navigating to /onboarding');

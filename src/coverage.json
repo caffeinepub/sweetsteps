@@ -1,24 +1,48 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-06T11:03:42.337Z",
+  "generatedAt": "2026-02-06T15:03:40.316Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 0,
-    "implemented": 0,
-    "items": []
+    "total": 2,
+    "implemented": 2,
+    "items": [
+      {
+        "id": "REQ-11",
+        "summary": "Fix the Onboarding Incomplete screen shown to already-authenticated users who have not finished onboarding so that clicking the \"Start Onboarding\" button always navigates to the first step of onboarding at `/onboarding` (and does not no-op). This must work reliably on repeated clicks and must not be blocked by any redirects, loading states, or stale navigation handlers.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/WeeklyMountain.tsx",
+          "frontend/src/pages/Onboarding.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/WeeklyMountain.tsx",
+          "frontend/src/pages/Onboarding.tsx"
+        ]
+      },
+      {
+        "id": "REQ-12",
+        "summary": "Add a stable test hook for the Onboarding Incomplete CTA so it can be verified (e.g., add a `data-testid` on the \"Start Onboarding\" button rendered by the Onboarding Incomplete screen).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/WeeklyMountain.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/WeeklyMountain.tsx"
+        ]
+      }
+    ]
   },
   "changedFiles": [
-    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/auth/PostAuthDisplayNameGate.tsx",
-    "frontend/src/pages/Signup.tsx",
+    "frontend/src/pages/Onboarding.tsx",
+    "frontend/src/pages/WeeklyMountain.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

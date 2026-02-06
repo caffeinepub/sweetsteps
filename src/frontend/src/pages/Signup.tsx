@@ -394,11 +394,20 @@ export default function Signup() {
       }
     } else {
       // Use standard desktop login path
-      // Call login() immediately with no awaits or timers before it
-      // This preserves the user gesture for Chrome's popup requirements
-      iiLogin();
+      // For signup, we want to force account selection by clearing first
+      console.log('[Signup] Clearing existing identity before login to force account selection');
+      
+      // Clear any existing identity first to force II to show account chooser
+      await iiClear();
+      
+      // Small delay to ensure clear completes
+      setTimeout(() => {
+        // Call login() immediately with no awaits or timers before it
+        // This preserves the user gesture for Chrome's popup requirements
+        iiLogin();
+      }, 100);
     }
-  }, [startAttempt, iiLogin, mobileLogin, endAttempt, diagnostics]);
+  }, [startAttempt, iiLogin, iiClear, mobileLogin, endAttempt, diagnostics]);
 
   const handleRetry = useCallback(() => {
     // Force reset and retry II login

@@ -1,16 +1,151 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 3,
-  "summary": "New project",
+  "projectStateVersion": 17,
+  "summary": "Implement and fix the full authentication + onboarding navigation flow (including display name modal and Sweet Summit carousel gating) with correct routing for new vs returning identities, plus persistent backend storage of a single bigGoal per identity, and implement a functional chocolate fridge reward system with automatic backend-persisted rewards per identity.",
   "architectural_notes": [
-    "Desired navigation flow order: Landing → Sign up → Internet Identity auth → Display name modal → Onboarding → Sweet Summit carousel → Weekly Mountain page (weekly mountain only after carousel completes)."
+    "Desired navigation flow order: Landing → Sign up → Internet Identity auth → Display name modal → Onboarding → Sweet Summit carousel → Weekly Mountain page (weekly mountain only after carousel completes).",
+    "Login behavior: show identity list if identities exist + option to create a new identity.",
+    "Routing rules: identity with completed onboarding goes straight to Weekly Mountain; identity with incomplete onboarding redirects to onboarding.",
+    "Sweet Summit carousel is full-screen and appears only once per identity; Weekly Mountain is only reachable after the user completes the carousel and taps “Start Your Journey”.",
+    "New user flow order must be: Landing → Sign up → Internet Identity auth → display name modal → onboarding → Sweet Summit carousel → Weekly Mountain.",
+    "Decision: Sign Up must always launch the Internet Identity 'create new identity' flow (even if browser already has existing identities), rather than reusing the generic login path.",
+    "Decision: 'Start Onboarding' from the incomplete-onboarding screen should always route to the very first onboarding screen regardless of partial progress.",
+    "Data model decision: store exactly one bigGoal per identity, persisted in the backend canister/database.",
+    "Sweet Summit carousel must remain on screen after onboarding completion and should not auto-navigate; only the slide-3 “Start your journey” button advances to the first Weekly Mountain.",
+    "Chocolate reward system: UI already implemented; persist reward counts in backend per identity; auto-award on completion events (daily step → +1 tiny chocolate, weekly mountain → +1 bar, BIG GOAL → +1 slab)."
   ],
   "known_issues": [
-    "Bug: After onboarding, Sweet Summit carousel flashes briefly then app navigates to Weekly Mountain page; display name modal does not appear (navigation order incorrect)."
+    "Bug: After onboarding, Sweet Summit carousel flashes briefly then app navigates to Weekly Mountain page; display name modal does not appear (navigation order incorrect).",
+    "Bug: Clicking Sign up routes through the generic Internet Identity login/validate flow (reusing existing delegation) instead of forcing the 'create new identity' path, showing 'Validating identity…' and an auth ID.",
+    "Bug: Incomplete-onboarding screen 'Start Onboarding' button does not navigate to the onboarding flow.",
+    "Bug: Sweet Summit carousel still does not pop up properly per identity gating.",
+    "Bug detail: After finishing onboarding, Sweet Summit carousel flashes briefly then auto-navigates away; it should persist until the user completes the carousel and taps “Start your journey” on slide 3."
   ],
   "isFixRequest": true,
-  "existing_features": [],
-  "new_feature_requests": [],
+  "existing_features": [
+    {
+      "id": "feature-after-the-user-completes-onboarding-submits-step-3-route-them-to-the-dedicated-sweet-summit-page-at-sweet-summit-and-ensure-the-sweet-summit-carousel-remains-visible-without-any-automatic-redirect-to-weekly-mountain",
+      "title": "After the user completes onboarding (submits step 3), route them to the dedicated Sweet Summit page at `/sweet-summit` and ensure the Sweet Summit carousel remains visible without any automatic redirect to `/weekly-mountain`.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-sweet-summit-carousel-ux-on-the-sweet-summit-page-three-slides-with-next-back-controls-on-each-slide-and-a-start-your-journey-button-only-on-slide-3-clicking-start-your-journey-must-mark-sweet-summit-as-seen-and-navigate-to-the-first-weekly-mountain-weekly-mountain",
+      "title": "Implement the Sweet Summit carousel UX on the `/sweet-summit` page: three slides with Next/Back controls on each slide and a “Start your journey” button only on slide 3; clicking “Start your journey” must mark Sweet Summit as seen and navigate to the first Weekly Mountain (`/weekly-mountain`).",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-onboarding-completion-sets-sweet-summit-gating-correctly-without-causing-redirects-when-onboarding-is-successfully-saved-set-localstorage-sweetsteps-sweet-summit-seen-to-false-and-do-not-redirect-to-weekly-mountain-from-the-onboarding-page-due-to-profile-existence",
+      "title": "Ensure onboarding completion sets Sweet Summit gating correctly without causing redirects: when onboarding is successfully saved, set `localStorage['sweetsteps_sweet_summit_seen']` to `'false'` and do not redirect to `/weekly-mountain` from the onboarding page due to profile existence.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-daily-task-completion-flow-so-that-when-the-user-completes-a-daily-step-via-the-existing-taskmodal-completion-action-the-frontend-automatically-calls-the-backend-to-award-exactly-1-tiny-chocolate-for-that-completed-step",
+      "title": "Update the Daily task completion flow so that when the user completes a daily step (via the existing TaskModal completion action), the frontend automatically calls the backend to award exactly 1 tiny chocolate for that completed step.",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-fridge-page-s-hardcoded-inventory-data-with-backend-driven-inventory-when-the-user-visits-fridge-and-toggles-period-filters-display-the-corresponding-backend-provided-totals-for-tiny-chocolates-bars-and-slabs",
+      "title": "Replace the Fridge page’s hardcoded inventory data with backend-driven inventory: when the user visits `/fridge` and toggles period filters, display the corresponding backend-provided totals for tiny chocolates, bars, and slabs.",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-word-love-with-a-brown-heart-emoji-in-the-footer-text-2026-built-with-love-using-caffeine-ai-across-all-pages-where-it-appears-while-keeping-the-rest-of-the-footer-text-link-and-styling-unchanged",
+      "title": "Replace the word \"love\" with a brown heart emoji (🤎) in the footer text \"© 2026. Built with love using caffeine.ai\" across all pages where it appears, while keeping the rest of the footer text, link, and styling unchanged.",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-reduce-the-vertical-height-of-the-sweet-summit-carousel-cards-on-sweet-summit-so-the-slide-cards-are-noticeably-less-tall-while-preserving-the-existing-3-slide-carousel-behavior-transitions-next-back-controls-keyboard-navigation-and-the-start-your-journey-button-only-on-slide-3",
+      "title": "Reduce the vertical height of the Sweet Summit carousel cards on `/sweet-summit` so the slide cards are noticeably less tall while preserving the existing 3-slide carousel behavior (transitions, Next/Back controls, keyboard navigation, and the \"Start Your Journey\" button only on slide 3).",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-onboarding-incomplete-screen-shown-to-already-authenticated-users-who-have-not-finished-onboarding-so-that-clicking-the-start-onboarding-button-always-navigates-to-the-first-step-of-onboarding-at-onboarding-and-does-not-no-op-this-must-work-reliably-on-repeated-clicks-and-must-not-be-blocked-by-any-redirects-loading-states-or-stale-navigation-handlers",
+      "title": "Fix the Onboarding Incomplete screen shown to already-authenticated users who have not finished onboarding so that clicking the \"Start Onboarding\" button always navigates to the first step of onboarding at `/onboarding` (and does not no-op). This must work reliably on repeated clicks and must not be blocked by any redirects, loading states, or stale navigation handlers.",
+      "reqIds": [
+        "REQ-11"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-stable-test-hook-for-the-onboarding-incomplete-cta-so-it-can-be-verified-e-g-add-a-data-testid-on-the-start-onboarding-button-rendered-by-the-onboarding-incomplete-screen",
+      "title": "Add a stable test hook for the Onboarding Incomplete CTA so it can be verified (e.g., add a `data-testid` on the \"Start Onboarding\" button rendered by the Onboarding Incomplete screen).",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Fix and implement full navigation/auth flow: Landing → Sign up → Internet Identity auth → display name modal → onboarding → Sweet Summit carousel (once per identity) → Weekly Mountain only after user action; returning users route based on onboarding completion; login shows identity list + create new option.",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Fix incomplete-onboarding screen: 'Start Onboarding' button must route to the first onboarding screen; ensure Sweet Summit carousel reliably appears per identity gating; persist a single bigGoal per identity in the backend canister/database.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Implement functional chocolate fridge rewards: automatically award 1 tiny chocolate after completing each daily step, 1 chocolate bar after completing each weekly mountain, and 1 chocolate slab after completing the BIG GOAL; persist rewards in the backend per identity (UI already implemented).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Add backend data structures and APIs to persist chocolate rewards per identity (Principal), supporting: (a) awarding 1 tiny chocolate after each completed daily step, (b) awarding 1 chocolate bar after each completed weekly mountain, and (c) awarding 1 chocolate slab after BIG GOAL completion, with duplicate-award protection so the same completion cannot be rewarded twice.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Add backend query API(s) to fetch the caller’s chocolate inventory totals in a way that supports the Fridge UI’s existing periods: week, month, and all time.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Ensure backend reward state survives canister upgrades by persisting reward state in stable storage, and introduce a conditional migration path if needed to preserve any existing stored user profile state during the upgrade that introduces rewards.",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "UI polish: Update footer text to replace the word “love” with a brown heart emoji; reduce the height of the Sweet Summit carousel cards (currently too tall).",
+      "reqIds": [],
+      "status": "pending"
+    }
+  ],
   "projectName": "Untitled request",
   "clarification_mode": "instant",
   "clarification_rounds": 0
