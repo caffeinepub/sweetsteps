@@ -8,6 +8,7 @@ import { useMobileInternetIdentityLoginPatched } from '../hooks/useMobileInterne
 import { useAuthFlowDiagnostics } from '../hooks/useAuthFlowDiagnostics';
 import { useCanisterWarmup } from '../hooks/useCanisterWarmup';
 import { usePostAuthTimeout } from '../hooks/usePostAuthTimeout';
+import { useOnboardingResult } from '../contexts/OnboardingResultContext';
 import { isIdentityValid, isSessionStale } from '../utils/identityValidation';
 import { getPlatformInfo, isChromeAndroid } from '../utils/platform';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ type AttemptPhase = 'idle' | 'connecting' | 'validating' | 'checking-access' | '
 export default function Login() {
   const { login: iiLogin, clear: iiClear, loginError: iiLoginError, identity: iiIdentity, loginStatus: iiLoginStatus, isInitializing: iiInitializing } = useInternetIdentity();
   const { actor, isFetching: actorFetching } = useActor();
+  const { onboardingResult } = useOnboardingResult();
   const navigate = useNavigate();
   
   const [attemptPhase, setAttemptPhase] = useState<AttemptPhase>('idle');
@@ -243,17 +245,18 @@ export default function Login() {
       diagnostics.transitionStep('onboarding-check');
       
       try {
-        const canAccess = await actor.canAccessOnboarding();
+        // Check onboarding status from localStorage
+        const hasOnboardingResult = !!onboardingResult;
         onboardingCheckTimeout.reset();
         setAttemptPhase('redirecting');
-        diagnostics.transitionStep('navigation', { destination: canAccess ? '/onboarding' : '/weekly-mountain' });
+        diagnostics.transitionStep('navigation', { destination: hasOnboardingResult ? '/weekly-mountain' : '/onboarding' });
         
-        if (canAccess) {
-          // User has not completed onboarding
-          navigate({ to: '/onboarding' });
-        } else {
+        if (hasOnboardingResult) {
           // User has completed onboarding
           navigate({ to: '/weekly-mountain' });
+        } else {
+          // User has not completed onboarding
+          navigate({ to: '/onboarding' });
         }
         
         diagnostics.completeAttempt('success', 'Login successful');
@@ -270,7 +273,7 @@ export default function Login() {
     };
 
     checkAndRedirect();
-  }, [validatedIdentity, iiIdentity, actor, actorFetching, navigate, attemptPhase, endAttempt, diagnostics, onboardingCheckTimeout]);
+  }, [validatedIdentity, iiIdentity, actor, actorFetching, navigate, attemptPhase, endAttempt, diagnostics, onboardingCheckTimeout, onboardingResult]);
 
   // Track login status changes (II only)
   useEffect(() => {
@@ -392,29 +395,20 @@ export default function Login() {
       diagnostics.startAttempt();
       diagnostics.transitionStep('onboarding-check');
       
-      actor.canAccessOnboarding()
-        .then((canAccess) => {
-          onboardingCheckTimeout.reset();
-          setAttemptPhase('redirecting');
-          diagnostics.transitionStep('navigation', { destination: canAccess ? '/onboarding' : '/weekly-mountain' });
-          if (canAccess) {
-            navigate({ to: '/onboarding' });
-          } else {
-            navigate({ to: '/weekly-mountain' });
-          }
-          diagnostics.completeAttempt('success', 'Retry successful');
-        })
-        .catch((err) => {
-          console.error('Error checking onboarding status:', err);
-          const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-          setOnboardingCheckError(
-            `Failed to check your account status: ${errorMessage}. Please try again or return to the landing page.`
-          );
-          setAttemptPhase('error');
-          diagnostics.completeAttempt('error', `Retry failed: ${errorMessage}`);
-        });
+      // Check onboarding status from localStorage
+      const hasOnboardingResult = !!onboardingResult;
+      onboardingCheckTimeout.reset();
+      setAttemptPhase('redirecting');
+      diagnostics.transitionStep('navigation', { destination: hasOnboardingResult ? '/weekly-mountain' : '/onboarding' });
+      
+      if (hasOnboardingResult) {
+        navigate({ to: '/weekly-mountain' });
+      } else {
+        navigate({ to: '/onboarding' });
+      }
+      diagnostics.completeAttempt('success', 'Retry successful');
     }
-  }, [iiIdentity, actor, actorFetching, navigate, diagnostics, onboardingCheckTimeout]);
+  }, [iiIdentity, actor, actorFetching, navigate, diagnostics, onboardingCheckTimeout, onboardingResult]);
 
   const handleRetry = useCallback(() => {
     // Force reset the attempt guard to ensure clean retry

@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useOnboardingResult } from '../contexts/OnboardingResultContext';
-import { useActor } from '../hooks/useActor';
 import { generateWeeklyMountain, type WeeklyMountainResponse } from '../lib/aiProxyClient';
 
 // Helper to get current week identifier (ISO week number)
@@ -21,42 +20,27 @@ function getCurrentWeekId(): string {
 export default function WeeklyMountain() {
   const navigate = useNavigate();
   const { onboardingResult, clearOnboardingResult } = useOnboardingResult();
-  const { actor, isFetching: actorFetching } = useActor();
 
   const [mountain, setMountain] = useState<WeeklyMountainResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isCheckingBackend, setIsCheckingBackend] = useState(false);
-  const [backendOnboardingStatus, setBackendOnboardingStatus] = useState<'incomplete' | 'complete' | null>(null);
   const [isRestarting, setIsRestarting] = useState(false);
 
-  // Check backend onboarding status when onboardingResult is missing
+  // Log onboarding result on mount for debugging
   useEffect(() => {
-    const checkBackendStatus = async () => {
-      if (onboardingResult || !actor || actorFetching) return;
-
-      setIsCheckingBackend(true);
-      try {
-        const canAccess = await actor.canAccessOnboarding();
-        setBackendOnboardingStatus(canAccess ? 'incomplete' : 'complete');
-      } catch (err) {
-        console.error('Error checking backend onboarding status:', err);
-        setBackendOnboardingStatus('incomplete'); // Fail safe: assume incomplete
-      } finally {
-        setIsCheckingBackend(false);
-      }
-    };
-
-    checkBackendStatus();
-  }, [onboardingResult, actor, actorFetching]);
+    console.log('[WeeklyMountain] Component mounted');
+    console.log('[WeeklyMountain] onboardingResult:', onboardingResult);
+  }, []);
 
   useEffect(() => {
     const fetchWeeklyMountain = async () => {
       if (!onboardingResult?.aiResponse?.bigGoal) {
+        console.log('[WeeklyMountain] No onboarding result, cannot fetch weekly mountain');
         setIsLoading(false);
         return;
       }
 
+      console.log('[WeeklyMountain] Fetching weekly mountain...');
       const currentWeekId = getCurrentWeekId();
       const storedWeekId = localStorage.getItem('sweetsteps_current_week');
       const storedMountain = localStorage.getItem('sweetsteps_weekly_mountain');
@@ -66,9 +50,11 @@ export default function WeeklyMountain() {
         try {
           setMountain(JSON.parse(storedMountain));
           setIsLoading(false);
+          console.log('[WeeklyMountain] Using cached weekly mountain');
           return;
         } catch {
           // Invalid stored data, fetch new
+          console.log('[WeeklyMountain] Cached data invalid, fetching new');
         }
       }
 
@@ -83,8 +69,9 @@ export default function WeeklyMountain() {
         // Store for this week
         localStorage.setItem('sweetsteps_current_week', currentWeekId);
         localStorage.setItem('sweetsteps_weekly_mountain', JSON.stringify(newMountain));
+        console.log('[WeeklyMountain] Fetched and cached new weekly mountain');
       } catch (err: any) {
-        console.error('Error fetching weekly mountain:', err);
+        console.error('[WeeklyMountain] Error fetching weekly mountain:', err);
         // Surface the error message from the AI proxy client
         setError(err.message || 'Unable to load weekly mountain. Please try again.');
       } finally {
@@ -101,44 +88,22 @@ export default function WeeklyMountain() {
     window.location.reload();
   };
 
-  const handleRestartOnboarding = async () => {
-    if (!actor) {
-      setError('Unable to connect to backend. Please try again.');
-      return;
-    }
-
+  const handleRestartOnboarding = () => {
     setIsRestarting(true);
-    try {
-      // Reset backend onboarding state
-      await actor.restartOnboarding();
-      
-      // Clear persisted onboarding result
-      clearOnboardingResult();
-      
-      // Navigate to onboarding
-      navigate({ to: '/onboarding' });
-    } catch (err: any) {
-      console.error('Error restarting onboarding:', err);
-      setError(err.message || 'Unable to restart onboarding. Please try again.');
-    } finally {
-      setIsRestarting(false);
-    }
-  };
-
-  const handleGoToOnboarding = () => {
-    // Clear persisted onboarding result before navigating
+    
+    // Clear persisted onboarding result
     clearOnboardingResult();
+    
+    // Navigate to onboarding
     navigate({ to: '/onboarding' });
   };
 
-  if (isLoading || isCheckingBackend) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6 py-16">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">
-            {isCheckingBackend ? 'Checking onboarding status...' : 'Loading your weekly mountain...'}
-          </p>
+          <p className="text-muted-foreground">Loading your weekly mountain...</p>
         </div>
       </div>
     );
@@ -169,72 +134,32 @@ export default function WeeklyMountain() {
   const displayMountain = mountain || onboardingResult?.aiResponse?.weeklyMountain;
 
   if (!displayMountain) {
-    // Distinguish between incomplete onboarding vs completed-but-missing-local-data
-    if (backendOnboardingStatus === 'incomplete') {
-      return (
-        <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6 py-16">
-          <div className="w-full max-w-2xl mx-auto space-y-4">
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Onboarding Incomplete</AlertTitle>
-              <AlertDescription>
-                You haven't completed onboarding yet. Let's get you started!
-              </AlertDescription>
-            </Alert>
-            <div className="text-center">
-              <Button
-                onClick={handleGoToOnboarding}
-                className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground"
-              >
-                Start Onboarding
-              </Button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    if (backendOnboardingStatus === 'complete') {
-      return (
-        <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6 py-16">
-          <div className="w-full max-w-2xl mx-auto space-y-4">
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Onboarding Data Missing</AlertTitle>
-              <AlertDescription>
-                Your onboarding data is missing locally. You can restart onboarding to create a fresh plan.
-              </AlertDescription>
-            </Alert>
-            <div className="text-center">
-              <Button
-                onClick={handleRestartOnboarding}
-                disabled={isRestarting}
-                className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground"
-              >
-                {isRestarting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Restarting...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Restart Onboarding
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Fallback if backend status check hasn't completed
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6 py-16">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Loading...</p>
+        <div className="w-full max-w-2xl mx-auto space-y-4">
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Onboarding Incomplete</AlertTitle>
+            <AlertDescription>
+              You haven't completed onboarding yet. Let's get you started!
+            </AlertDescription>
+          </Alert>
+          <div className="text-center">
+            <Button
+              onClick={handleRestartOnboarding}
+              disabled={isRestarting}
+              className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              {isRestarting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Starting...
+                </>
+              ) : (
+                'Start Onboarding'
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -264,7 +189,7 @@ export default function WeeklyMountain() {
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-6 py-8 space-y-8">
         {/* Progress Section */}
-        <Card className="bg-card border-border">
+        <Card className="bg-card border-border min-h-[400px] md:min-h-[450px]">
           <CardContent className="p-8 space-y-6">
             {/* Big Percentage */}
             <div className="text-center">

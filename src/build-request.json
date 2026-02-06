@@ -1,70 +1,43 @@
 {
   "kind": "build_request",
-  "title": "Persist onboarding completion in stable storage and remove Landing page SignupTest button",
-  "priority": "high",
+  "title": "Increase height of selected inner card in 'Why SweetSteps' carousel to prevent text clipping",
+  "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-5",
-      "text": "Persist backend user profile onboarding state in stable storage so `userProfiles` (including `onboardingCompleted`) survives canister upgrades/redeploys and returning authenticated users no longer see onboarding data missing due to backend state resets.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "recent-messages"
-        ],
-        "quotes": [
-          "Please do that and please ensure that everything is in perfect working condition."
-        ]
-      },
-      "acceptanceCriteria": [
-        "After calling `completeOnboarding()`, `canAccessOnboarding()` returns `false` for that caller and remains `false` after a canister upgrade (no reinstall).",
-        "After a canister upgrade, `getCallerUserProfile()` for an onboarded user returns a non-null profile with `onboardingCompleted = true`.",
-        "Existing backend APIs continue to work without signature changes: `completeOnboarding`, `restartOnboarding`, `canAccessOnboarding`, `getCallerUserProfile`, `getUserProfile`, `saveCallerUserProfile`, and `alternateSignup`.",
-        "No new traps/regressions are introduced for anonymous callers beyond current behavior.",
-        "State restoration logic is deterministic: stable state is the source of truth on upgrade, and in-memory structures are rebuilt from it on startup/post-upgrade."
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "text": "Remove the temporary/backup SignupTest navigation/button from the Landing page UI so users can no longer access `/signup-test` from the landing hero actions.",
+      "id": "REQ-1",
+      "text": "In the “Why SweetSteps?” modal carousel on the Landing page, increase the rendered height of the specific selected element (XPath: /html[1]/body[1]/div[1]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]) so that the feature description text is not cut off. Apply the change ONLY to the element corresponding to that XPath (e.g., by adjusting that element’s Tailwind height/min-height/padding/overflow behavior) and do not modify surrounding carousel layout/styling beyond what is strictly necessary.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "recent-messages"
+          "msg-16",
+          "msg-17",
+          "msg-18"
         ],
         "quotes": [
-          "Also, please remove the test signup button from the landing page. It's not required anymore"
+          "In the Why SweetSteps carousel, can you please increase the height of this inner card, as some text is getting cut off",
+          "Please go ahead",
+          "/html[1]/body[1]/div[1]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]"
         ]
       },
       "acceptanceCriteria": [
-        "`frontend/src/pages/Landing.tsx` no longer renders the \"Test Signup Page\" button/link to `/signup-test`.",
-        "Landing page builds cleanly with no unused imports (e.g., remove `TestTube2` if it becomes unused).",
-        "All remaining Landing page buttons (Start Climbing, Continue Climbing, Why SweetSteps?) continue to function and render correctly."
+        "When opening “Why SweetSteps?” on the Landing page and navigating through all carousel slides, no slide’s title or description text is visually clipped/cut off.",
+        "The selected element is visibly taller than before and provides enough vertical space for the longest description at common breakpoints (mobile and desktop).",
+        "No unexpected scrollbars appear inside the card/selected element as a result of the height change.",
+        "Carousel navigation (Previous/Next buttons, dot indicators, slide transitions) continues to work and looks unchanged aside from the increased height of the selected element.",
+        "Only the element corresponding to the provided XPath has its styling adjusted; other components and pages remain unchanged."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor in `backend/main.mo` (no additional backend services).",
-    "Only add `backend/migration.mo` if it is required for a state upgrade; otherwise use upgrade hooks/state patterns in the main actor.",
-    "Do not edit files under `frontend/immutablePaths` (compose existing UI components instead).",
-    "Use English for any user-facing text."
+    "Frontend changes must be limited to the single element identified by XPath /html[1]/body[1]/div[1]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1].",
+    "Do not edit any files under frontend/src/components/ui (read-only shadcn components)."
   ],
   "nonGoals": [
-    "Do not remove the `/signup-test` route/page itself unless explicitly requested; only remove the Landing page button/navigation.",
-    "Do not redesign or change the authentication flows beyond what is necessary to persist `userProfiles` across upgrades.",
-    "Do not add external databases or third-party storage."
+    "Do not redesign the carousel or change copy/content of the slides.",
+    "Do not add new features or backend changes for this request."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

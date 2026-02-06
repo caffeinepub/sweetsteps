@@ -6,12 +6,12 @@
 
 import { useEffect, useRef } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { useActor } from '../../hooks/useActor';
+import { useOnboardingResult } from '../../contexts/OnboardingResultContext';
 import { getSecretFromHash } from '../../utils/urlParams';
 
 export function InternetIdentityAuthorizeCallbackHandler() {
   const navigate = useNavigate();
-  const { actor } = useActor();
+  const { onboardingResult } = useOnboardingResult();
   const hasHandledRef = useRef(false);
 
   useEffect(() => {
@@ -21,28 +21,22 @@ export function InternetIdentityAuthorizeCallbackHandler() {
     // Check for authorize principal in hash (getSecretFromHash automatically clears it)
     const principal = getSecretFromHash('authorize');
     
-    if (principal && actor) {
+    if (principal) {
       console.log('II authorize callback detected, checking onboarding status');
       hasHandledRef.current = true;
       
-      // Check onboarding status and route accordingly
-      actor.canAccessOnboarding()
-        .then((canAccess) => {
-          if (canAccess) {
-            // User has not completed onboarding
-            navigate({ to: '/onboarding' });
-          } else {
-            // User has completed onboarding
-            navigate({ to: '/weekly-mountain' });
-          }
-        })
-        .catch((err) => {
-          console.error('Error checking onboarding status in callback handler:', err);
-          // Default to onboarding on error
-          navigate({ to: '/onboarding' });
-        });
+      // Check if user has completed onboarding based on localStorage
+      if (onboardingResult) {
+        // User has completed onboarding
+        console.log('Onboarding complete, navigating to /weekly-mountain');
+        navigate({ to: '/weekly-mountain' });
+      } else {
+        // User has not completed onboarding
+        console.log('Onboarding incomplete, navigating to /onboarding');
+        navigate({ to: '/onboarding' });
+      }
     }
-  }, [navigate, actor]);
+  }, [navigate, onboardingResult]);
 
   // This component doesn't render anything
   return null;

@@ -17,10 +17,9 @@ export default function Onboarding() {
   const { identity } = useInternetIdentity();
   const { actor, isFetching: actorFetching } = useActor();
   const navigate = useNavigate();
-  const { setOnboardingResult, clearOnboardingResult } = useOnboardingResult();
+  const { onboardingResult, setOnboardingResult, clearOnboardingResult } = useOnboardingResult();
 
   const [currentStep, setCurrentStep] = useState(1);
-  const [isCheckingAccess, setIsCheckingAccess] = useState(true);
   const [goal, setGoal] = useState('');
   const [currentStanding, setCurrentStanding] = useState('');
   const [timeframe, setTimeframe] = useState('');
@@ -29,30 +28,17 @@ export default function Onboarding() {
   const [planData, setPlanData] = useState<OnboardingPlanResponse | null>(null);
   const [carouselSlide, setCarouselSlide] = useState(0);
 
-  // Check if user can access onboarding
+  // Check if user has already completed onboarding
   useEffect(() => {
-    const checkAccess = async () => {
-      if (!identity || !actor || actorFetching) return;
-
-      try {
-        const canAccess = await actor.canAccessOnboarding();
-        if (!canAccess) {
-          // User has already completed onboarding, redirect to Weekly Mountain
-          navigate({ to: '/weekly-mountain' });
-        } else {
-          // Clear any stale persisted onboarding result when starting fresh
-          clearOnboardingResult();
-          setIsCheckingAccess(false);
-        }
-      } catch (err) {
-        console.error('Error checking onboarding access:', err);
-        setError('Unable to verify onboarding status. Please try again.');
-        setIsCheckingAccess(false);
-      }
-    };
-
-    checkAccess();
-  }, [identity, actor, actorFetching, navigate, clearOnboardingResult]);
+    if (onboardingResult) {
+      // User has already completed onboarding, redirect to Weekly Mountain
+      console.log('[Onboarding] User already has onboarding result, redirecting to weekly-mountain');
+      navigate({ to: '/weekly-mountain' });
+    } else {
+      // Clear any stale persisted onboarding result when starting fresh
+      clearOnboardingResult();
+    }
+  }, [onboardingResult, navigate, clearOnboardingResult]);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -106,18 +92,21 @@ export default function Onboarding() {
       
       setPlanData(aiResponse);
 
-      // Store in context (which persists to localStorage) for Sweet Summit and other pages
-      setOnboardingResult({
+      // Prepare the complete onboarding result
+      const completeResult = {
         answers: {
           vagueGoal: goal,
           currentProgress: currentStanding,
           timeLimit: timeframe,
         },
         aiResponse,
-      });
+      };
 
-      // Mark onboarding as completed in backend
-      await actor.completeOnboarding();
+      // Store in context (which persists to localStorage)
+      setOnboardingResult(completeResult);
+
+      // Verify the data was stored correctly
+      console.log('[Onboarding] Stored onboarding result:', completeResult);
 
       // Move to Sweet Summit screen (step 4)
       setCurrentStep(4);
@@ -144,10 +133,11 @@ export default function Onboarding() {
   };
 
   const handleStartJourney = () => {
+    console.log('[Onboarding] Navigating to Weekly Mountain');
     navigate({ to: '/weekly-mountain' });
   };
 
-  if (!identity || isCheckingAccess) {
+  if (!identity) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6 py-16">
         <div className="flex flex-col items-center gap-4">

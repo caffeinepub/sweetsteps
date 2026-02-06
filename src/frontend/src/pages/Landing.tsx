@@ -162,7 +162,7 @@ export default function Landing() {
 
             {/* Carousel Content */}
             <div className="p-6 md:p-8">
-              <div className="relative overflow-hidden min-h-[280px] md:min-h-[240px]">
+              <div className="relative overflow-hidden min-h-[360px] md:min-h-[320px]">
                 {features.map((feature, index) => (
                   <div
                     key={index}

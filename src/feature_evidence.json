@@ -2,8 +2,8 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-remove-the-temporary-backup-signuptest-navigation-button-from-the-landing-page-ui-so-users-can-no-longer-access-signup-test-from-the-landing-hero-actions",
-      "featureTitle": "Remove the temporary/backup SignupTest navigation/button from the Landing page UI so users can no longer access `/signup-test` from the landing hero actions.",
+      "featureId": "feature-in-the-why-sweetsteps-modal-carousel-on-the-landing-page-increase-the-rendered-height-of-the-specific-selected-element-xpath-html-1-body-1-div-1-div-1-div-1-div-1-div-2-div-1-div-1-div-1-so-that-the-feature-description-text-is-not-cut-off-apply-the-change-only-to-the-element-corresponding-to-that-xpath-e-g-by-adjusting-that-element-s-tailwind-height-min-height-padding-overflow-behavior-and-do-not-modify-surrounding-carousel-layout-styling-beyond-what-is-strictly-necessary",
+      "featureTitle": "In the “Why SweetSteps?” modal carousel on the Landing page, increase the rendered height of the specific selected element (XPath: /html[1]/body[1]/div[1]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]) so that the feature description text is not cut off. Apply the change ONLY to the element corresponding to that XPath (e.g., by adjusting that element’s Tailwind height/min-height/padding/overflow behavior) and do not modify surrounding carousel layout/styling beyond what is strictly necessary.",
       "files": [
         "frontend/src/pages/Landing.tsx"
       ],
@@ -16,7 +16,7 @@
         "authorization@4.0.0"
       ],
       "testIds": [
-        "REQ-6"
+        "REQ-1"
       ],
       "confidence": "high"
     }

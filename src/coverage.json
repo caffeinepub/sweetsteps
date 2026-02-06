@@ -1,25 +1,18 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-05T10:10:01.772Z",
+  "generatedAt": "2026-02-06T01:17:56.691Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
+    "total": 1,
     "implemented": 1,
     "items": [
       {
-        "id": "REQ-5",
-        "summary": "Persist backend user profile onboarding state in stable storage so `userProfiles` (including `onboardingCompleted`) survives canister upgrades/redeploys and returning authenticated users no longer see onboarding data missing due to backend state resets.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-6",
-        "summary": "Remove the temporary/backup SignupTest navigation/button from the Landing page UI so users can no longer access `/signup-test` from the landing hero actions.",
+        "id": "REQ-1",
+        "summary": "In the “Why SweetSteps?” modal carousel on the Landing page, increase the rendered height of the specific selected element (XPath: /html[1]/body[1]/div[1]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]) so that the feature description text is not cut off. Apply the change ONLY to the element corresponding to that XPath (e.g., by adjusting that element’s Tailwind height/min-height/padding/overflow behavior) and do not modify surrounding carousel layout/styling beyond what is strictly necessary.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/pages/Landing.tsx"
@@ -31,8 +24,6 @@
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
-    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",

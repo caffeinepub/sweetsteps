@@ -11,29 +11,18 @@ import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
 export type Time = bigint;
-export interface User { 'createdAt' : Time, 'onboardingCompleted' : boolean }
+export interface UserProfile { 'name' : string, 'createdAt' : Time }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
-  'alternateSignup' : ActorMethod<
-    [string, string],
-    { 'message' : string, 'success' : boolean }
-  >,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
-  'bootstrapRBAC' : ActorMethod<[], undefined>,
-  'canAccessOnboarding' : ActorMethod<[], boolean>,
-  'completeOnboarding' : ActorMethod<[], undefined>,
-  'getCallerUserProfile' : ActorMethod<[], [] | [User]>,
+  'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
-  'getRBACStatus' : ActorMethod<[], { 'bootstrapped' : boolean }>,
-  'getUserProfile' : ActorMethod<[Principal], [] | [User]>,
+  'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
-  'isRBACActive' : ActorMethod<[], boolean>,
-  'restartOnboarding' : ActorMethod<[], undefined>,
-  'saveCallerUserProfile' : ActorMethod<[User], undefined>,
-  'warmup' : ActorMethod<[], { 'time' : Time, 'caller' : Principal }>,
+  'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

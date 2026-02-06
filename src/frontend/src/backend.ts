@@ -90,9 +90,9 @@ export class ExternalBlob {
     }
 }
 export type Time = bigint;
-export interface User {
+export interface UserProfile {
+    name: string;
     createdAt: Time;
-    onboardingCompleted: boolean;
 }
 export enum UserRole {
     admin = "admin",
@@ -101,30 +101,14 @@ export enum UserRole {
 }
 export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
-    alternateSignup(username: string, password: string): Promise<{
-        message: string;
-        success: boolean;
-    }>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
-    bootstrapRBAC(): Promise<void>;
-    canAccessOnboarding(): Promise<boolean>;
-    completeOnboarding(): Promise<void>;
-    getCallerUserProfile(): Promise<User | null>;
+    getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
-    getRBACStatus(): Promise<{
-        bootstrapped: boolean;
-    }>;
-    getUserProfile(user: Principal): Promise<User | null>;
+    getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
-    isRBACActive(): Promise<boolean>;
-    restartOnboarding(): Promise<void>;
-    saveCallerUserProfile(profile: User): Promise<void>;
-    warmup(): Promise<{
-        time: Time;
-        caller: Principal;
-    }>;
+    saveCallerUserProfile(profile: UserProfile): Promise<void>;
 }
-import type { User as _User, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
+import type { UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _initializeAccessControlWithSecret(arg0: string): Promise<void> {
@@ -138,23 +122,6 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor._initializeAccessControlWithSecret(arg0);
-            return result;
-        }
-    }
-    async alternateSignup(arg0: string, arg1: string): Promise<{
-        message: string;
-        success: boolean;
-    }> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.alternateSignup(arg0, arg1);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.alternateSignup(arg0, arg1);
             return result;
         }
     }
@@ -172,49 +139,7 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async bootstrapRBAC(): Promise<void> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.bootstrapRBAC();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.bootstrapRBAC();
-            return result;
-        }
-    }
-    async canAccessOnboarding(): Promise<boolean> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.canAccessOnboarding();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.canAccessOnboarding();
-            return result;
-        }
-    }
-    async completeOnboarding(): Promise<void> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.completeOnboarding();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.completeOnboarding();
-            return result;
-        }
-    }
-    async getCallerUserProfile(): Promise<User | null> {
+    async getCallerUserProfile(): Promise<UserProfile | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserProfile();
@@ -242,23 +167,7 @@ export class Backend implements backendInterface {
             return from_candid_UserRole_n4(this._uploadFile, this._downloadFile, result);
         }
     }
-    async getRBACStatus(): Promise<{
-        bootstrapped: boolean;
-    }> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getRBACStatus();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getRBACStatus();
-            return result;
-        }
-    }
-    async getUserProfile(arg0: Principal): Promise<User | null> {
+    async getUserProfile(arg0: Principal): Promise<UserProfile | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getUserProfile(arg0);
@@ -286,35 +195,7 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async isRBACActive(): Promise<boolean> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.isRBACActive();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.isRBACActive();
-            return result;
-        }
-    }
-    async restartOnboarding(): Promise<void> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.restartOnboarding();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.restartOnboarding();
-            return result;
-        }
-    }
-    async saveCallerUserProfile(arg0: User): Promise<void> {
+    async saveCallerUserProfile(arg0: UserProfile): Promise<void> {
         if (this.processError) {
             try {
                 const result = await this.actor.saveCallerUserProfile(arg0);
@@ -328,28 +209,11 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async warmup(): Promise<{
-        time: Time;
-        caller: Principal;
-    }> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.warmup();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.warmup();
-            return result;
-        }
-    }
 }
 function from_candid_UserRole_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
     return from_candid_variant_n5(_uploadFile, _downloadFile, value);
 }
-function from_candid_opt_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_User]): User | null {
+function from_candid_opt_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
     return value.length === 0 ? null : value[0];
 }
 function from_candid_variant_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
