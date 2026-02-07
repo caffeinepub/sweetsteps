@@ -1,42 +1,66 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix Onboarding Incomplete CTA navigation reliability",
+  "title": "Auth UI layout fixes and account actions hamburger menu",
   "requirements": [
     {
-      "id": "REQ-11",
-      "summary": "Ensure the Onboarding Incomplete screen CTA always navigates authenticated onboarding-incomplete users to `/onboarding` (step 1) reliably, including on repeated clicks, without redirecting back to other pages.",
+      "id": "REQ-1",
+      "summary": "Make IdentityConfirmationCard content-driven (auto height), slightly tighter padding, and ensure principal text wraps without overflow.",
       "acceptanceCriteria": [
-        "Given an authenticated user with no completed onboarding profile, when the app shows the \"Onboarding Incomplete\" screen, clicking \"Start Onboarding\" navigates to `/onboarding`.",
-        "After navigation, the onboarding UI is visible and starts at step 1 (e.g., shows \"Step 1 of 3\" and the step-1 prompt).",
-        "The click action is not a no-op: navigation occurs without requiring a page refresh, and repeated clicks behave consistently.",
-        "No unintended redirect sends the user back to `/weekly-mountain` or any other page when they are onboarding-incomplete."
+        "On small screens, all card text is fully visible without being clipped.",
+        "The card uses content-driven (auto) height rather than a fixed height that can truncate text.",
+        "Padding is slightly reduced compared to current styling while maintaining readability.",
+        "Long principal strings still wrap (break-all) and do not cause horizontal overflow."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/WeeklyMountain.tsx",
+          "path": "frontend/src/components/auth/IdentityConfirmationCard.tsx",
           "operation": "modify",
-          "description": "Fix the \"Start Onboarding\" CTA on the Onboarding Incomplete screen to use a stable, repeatable navigation handler that always routes to `/onboarding` (e.g., use a memoized click handler that prevents default/propagation and triggers router navigation with a consistent replace/push strategy). Ensure the CTA cannot become a no-op due to re-renders, loading state transitions, or stale closures. Use the shadcn-ui Button component for the CTA presentation (do not edit `frontend/src/components/ui/*`). Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/Onboarding.tsx",
-          "operation": "modify",
-          "description": "Confirm the `/onboarding` page reliably shows step 1 on fresh navigation from the Onboarding Incomplete CTA (no unexpected redirects for onboarding-incomplete authenticated users, and no state persistence that would skip step 1). If necessary, add a small defensive reset on mount/navigation so the first render after navigating to `/onboarding` starts at step 1."
+          "description": "Remove any implicit truncation of the principal display so the full principal can render; ensure the card/container uses auto height (no fixed/min heights that could clip), reduce internal padding slightly (e.g., CardContent and the inner principal/details panel), and keep/strengthen wrapping/overflow-safe text behavior (e.g., break-all + no horizontal overflow). Verify the component's usage instructions before implementing."
         }
       ]
     },
     {
-      "id": "REQ-12",
-      "summary": "Add a stable test hook (`data-testid`) to uniquely identify the Onboarding Incomplete \"Start Onboarding\" button.",
+      "id": "REQ-2",
+      "summary": "Reduce top/bottom padding on the auth page container wrapping the identity confirmation card to prevent overflow while keeping comfortable left/right padding.",
       "acceptanceCriteria": [
-        "The \"Start Onboarding\" button on the Onboarding Incomplete screen includes a `data-testid` attribute that uniquely identifies it.",
-        "The `data-testid` does not change across renders and does not depend on dynamic values (like principal)."
+        "The page containing the affected card no longer overflows vertically due to excessive top/bottom padding.",
+        "Top/bottom padding is significantly tighter than before; left/right padding remains comfortable.",
+        "No horizontal scrollbar is introduced by the container spacing changes."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/WeeklyMountain.tsx",
+          "path": "frontend/src/pages/Login.tsx",
           "operation": "modify",
-          "description": "Add a stable `data-testid` attribute (e.g., `onboarding-incomplete-start-onboarding`) to the \"Start Onboarding\" button rendered in the Onboarding Incomplete screen so automated tests can reliably select it. Use the existing shadcn-ui Button component without modifying any files under `frontend/src/components/ui`. Verify the component's usage instructions before implementing."
+          "description": "Adjust the main page layout container that wraps the auth card/flow to significantly reduce vertical (top/bottom) padding on small screens while preserving reasonable horizontal padding; ensure the layout no longer causes vertical overflow/clipping. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/Signup.tsx",
+          "operation": "modify",
+          "description": "Apply the same container padding reduction strategy as Login for the signup auth flow container so top/bottom padding does not cause overflow on small screens, while keeping left/right padding comfortable. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Replace AuthenticatedHeader’s direct Logout/Delete buttons with a hamburger-triggered menu that preserves existing logout/delete flows, confirmation dialog, and loading/disabled/error behaviors.",
+      "acceptanceCriteria": [
+        "AuthenticatedHeader no longer shows Logout/Delete buttons directly in the header layout; instead, a hamburger trigger opens a menu containing both actions.",
+        "Clicking Logout from the menu performs the same logout flow as before (identity cleared, React Query cache cleared, onboarding/session cleared, navigates to '/').",
+        "Clicking Delete Account from the menu opens the existing confirmation dialog and, upon confirmation, performs the same deletion flow as before (calls deleteCallerUserData, clears session/caches, navigates to '/').",
+        "While an action is in progress, the menu actions are disabled appropriately and loading state is still communicated to the user.",
+        "Any existing delete error message handling continues to work and remains visible when relevant."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/AccountActionsMenu.tsx",
+          "operation": "create",
+          "description": "Create a small hamburger-triggered actions menu (compose shadcn-ui/Radix dropdown-style primitives outside of frontend/src/components/ui) that exposes Logout and Delete Account actions, supports disabled states while logging out/deleting, and can render loading indicators for actions. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/AuthenticatedHeader.tsx",
+          "operation": "modify",
+          "description": "Replace the inline Logout and Delete Account buttons with the new hamburger AccountActionsMenu; wire existing handleLogout and delete-account confirmation dialog to be launched from the menu, preserving current loading/disabled states and existing delete error rendering. Verify the component's usage instructions before implementing."
         }
       ]
     }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { useInternetIdentity } from '../hooks/useInternetIdentity';
+import { useAuthStabilization } from '../hooks/useAuthStabilization';
 import { useActor } from '../hooks/useActor';
 import { useGetCallerUserProfile, useSaveCallerUserProfile } from '../hooks/useQueries';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ import { useOnboardingResult } from '../contexts/OnboardingResultContext';
 const SWEET_SUMMIT_SEEN_KEY = 'sweetsteps_sweet_summit_seen';
 
 export default function Onboarding() {
-  const { identity } = useInternetIdentity();
+  const { isAuthStabilized, isAuthenticated } = useAuthStabilization();
   const { actor, isFetching: actorFetching } = useActor();
   const { data: userProfile, isLoading: profileLoading, isFetched: profileFetched } = useGetCallerUserProfile();
   const saveProfileMutation = useSaveCallerUserProfile();
@@ -59,12 +59,28 @@ export default function Onboarding() {
     }
   }, [userProfile, profileLoading, profileFetched, isSubmitting, navigate]);
 
-  // Redirect if not authenticated
+  // Redirect to signup only after auth stabilizes and we confirm user is not authenticated
   useEffect(() => {
-    if (!identity && !actorFetching) {
-      navigate({ to: '/signup' });
+    // Wait for auth to stabilize before making routing decisions
+    if (!isAuthStabilized) {
+      console.log('[Onboarding] Auth not yet stabilized, waiting...');
+      return;
     }
-  }, [identity, actorFetching, navigate]);
+
+    // Wait for actor initialization to complete
+    if (actorFetching) {
+      console.log('[Onboarding] Actor still fetching, waiting...');
+      return;
+    }
+
+    // Only redirect if we're certain the user is not authenticated after stabilization
+    if (!isAuthenticated) {
+      console.log('[Onboarding] Not authenticated after stabilization, redirecting to /signup');
+      navigate({ to: '/signup' });
+    } else {
+      console.log('[Onboarding] User is authenticated, staying on /onboarding');
+    }
+  }, [isAuthStabilized, isAuthenticated, actorFetching, navigate]);
 
   const handleNext = () => {
     if (currentStep < 3) {
@@ -130,7 +146,8 @@ export default function Onboarding() {
     }
   };
 
-  if (!identity || profileLoading) {
+  // Show loading state while auth is stabilizing or actor/profile is loading
+  if (!isAuthStabilized || actorFetching || profileLoading) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6 py-16">
         <div className="flex flex-col items-center gap-4">
@@ -200,7 +217,7 @@ export default function Onboarding() {
                   <Input
                     id="currentStanding"
                     type="text"
-                    placeholder="e.g., Complete beginner, Have some experience, Halfway there..."
+                    placeholder="e.g., Complete beginner, Have some experience, Almost there..."
                     value={currentStanding}
                     onChange={(e) => setCurrentStanding(e.target.value)}
                     className="h-12 text-base rounded-xl bg-card border-border text-foreground placeholder:text-muted-foreground"
@@ -240,17 +257,24 @@ export default function Onboarding() {
                   </Label>
                   <Select value={timeframe} onValueChange={setTimeframe}>
                     <SelectTrigger 
-                      id="timeframe" 
+                      id="timeframe"
                       className="h-12 text-base rounded-xl bg-card border-border text-foreground"
                     >
                       <SelectValue placeholder="Select a timeframe" />
                     </SelectTrigger>
                     <SelectContent className="bg-card border-border">
-                      <SelectItem value="1 month" className="text-foreground hover:bg-muted">1 month</SelectItem>
-                      <SelectItem value="3 months" className="text-foreground hover:bg-muted">3 months</SelectItem>
-                      <SelectItem value="6 months" className="text-foreground hover:bg-muted">6 months</SelectItem>
-                      <SelectItem value="1 year" className="text-foreground hover:bg-muted">1 year</SelectItem>
-                      <SelectItem value="2+ years" className="text-foreground hover:bg-muted">2+ years</SelectItem>
+                      <SelectItem value="1-month" className="text-foreground hover:bg-muted">
+                        1 month
+                      </SelectItem>
+                      <SelectItem value="3-months" className="text-foreground hover:bg-muted">
+                        3 months
+                      </SelectItem>
+                      <SelectItem value="6-months" className="text-foreground hover:bg-muted">
+                        6 months
+                      </SelectItem>
+                      <SelectItem value="1-year" className="text-foreground hover:bg-muted">
+                        1 year
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -293,23 +317,6 @@ export default function Onboarding() {
             )}
           </CardContent>
         </Card>
-
-        {/* Footer */}
-        <footer className="w-full py-8 px-6 mt-12">
-          <div className="max-w-2xl mx-auto text-center">
-            <p className="text-muted-foreground text-xs md:text-sm">
-              © 2026. Built with 🤎 using{' '}
-              <a 
-                href="https://caffeine.ai" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-foreground hover:text-primary transition-colors underline underline-offset-2"
-              >
-                caffeine.ai
-              </a>
-            </p>
-          </div>
-        </footer>
       </div>
     </div>
   );

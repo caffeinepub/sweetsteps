@@ -1,11 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Ensure the "Start Onboarding" button on the Onboarding Incomplete screen reliably navigates authenticated, onboarding-incomplete users to the first onboarding step at `/onboarding`.
+**Goal:** Fix identity confirmation card clipping/overflow issues on small screens and move account actions into a hamburger menu in the authenticated header.
 
 **Planned changes:**
-- Fix the "Start Onboarding" CTA so it always triggers navigation to `/onboarding`, including on repeated clicks, without being blocked by redirects, loading states, or stale navigation handlers.
-- Prevent unintended redirects that send onboarding-incomplete users back to `/weekly-mountain` (or any other page) when they attempt to start onboarding.
-- Add a stable `data-testid` attribute to the "Start Onboarding" button on the Onboarding Incomplete screen for test automation.
+- Update the identity confirmation card styling to use fully content-driven (auto) height, slightly reduce internal padding where needed, and ensure long text (e.g., principal) wraps/breaks to avoid horizontal overflow.
+- Reduce the top/bottom padding of the parent container that wraps the card to prevent vertical overflow while keeping reasonable left/right padding.
+- Replace direct Logout and Delete Account header buttons with a hamburger menu in `AuthenticatedHeader` containing both actions, preserving existing delete confirmation dialog and current disabled/loading/error behaviors.
 
-**User-visible outcome:** Authenticated users who haven’t completed onboarding can click "Start Onboarding" and consistently land on `/onboarding` at step 1 without needing to refresh, and without being redirected away.
+**User-visible outcome:** The identity confirmation card content is no longer cut off on small screens, the page no longer overflows due to excessive padding, and Logout/Delete Account are accessed via a hamburger menu while behaving the same as before.

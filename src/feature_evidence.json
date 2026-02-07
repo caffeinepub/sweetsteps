@@ -2,11 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-fix-the-onboarding-incomplete-screen-shown-to-already-authenticated-users-who-have-not-finished-onboarding-so-that-clicking-the-start-onboarding-button-always-navigates-to-the-first-step-of-onboarding-at-onboarding-and-does-not-no-op-this-must-work-reliably-on-repeated-clicks-and-must-not-be-blocked-by-any-redirects-loading-states-or-stale-navigation-handlers",
-      "featureTitle": "Fix the Onboarding Incomplete screen shown to already-authenticated users who have not finished onboarding so that clicking the \"Start Onboarding\" button always navigates to the first step of onboarding at `/onboarding` (and does not no-op). This must work reliably on repeated clicks and must not be blocked by any redirects, loading states, or stale navigation handlers.",
+      "featureId": "feature-adjust-the-identity-confirmation-card-so-its-content-is-never-cut-off-make-the-card-height-fully-auto-no-implicit-explicit-fixed-height-constraints-reduce-internal-padding-slightly-where-needed-and-ensure-long-text-e-g-principal-wraps-without-overflowing",
+      "featureTitle": "Adjust the identity confirmation card so its content is never cut off: make the card height fully auto (no implicit/explicit fixed height constraints), reduce internal padding slightly where needed, and ensure long text (e.g., principal) wraps without overflowing.",
       "files": [
-        "frontend/src/pages/Onboarding.tsx",
-        "frontend/src/pages/WeeklyMountain.tsx"
+        "frontend/src/components/auth/IdentityConfirmationCard.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -17,15 +16,16 @@
         "authorization@4.0.0"
       ],
       "testIds": [
-        "REQ-11"
+        "REQ-1"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-a-stable-test-hook-for-the-onboarding-incomplete-cta-so-it-can-be-verified-e-g-add-a-data-testid-on-the-start-onboarding-button-rendered-by-the-onboarding-incomplete-screen",
-      "featureTitle": "Add a stable test hook for the Onboarding Incomplete CTA so it can be verified (e.g., add a `data-testid` on the \"Start Onboarding\" button rendered by the Onboarding Incomplete screen).",
+      "featureId": "feature-reduce-the-padding-of-the-parent-container-that-wraps-the-affected-card-to-eliminate-overflow-with-a-significant-reduction-primarily-on-top-bottom-while-preserving-reasonable-left-right-padding",
+      "featureTitle": "Reduce the padding of the parent container that wraps the affected card to eliminate overflow, with a significant reduction primarily on top/bottom while preserving reasonable left/right padding.",
       "files": [
-        "frontend/src/pages/WeeklyMountain.tsx"
+        "frontend/src/pages/Login.tsx",
+        "frontend/src/pages/Signup.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -36,7 +36,27 @@
         "authorization@4.0.0"
       ],
       "testIds": [
-        "REQ-12"
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-replace-the-header-s-direct-logout-and-delete-account-buttons-with-a-small-hamburger-menu-in-authenticatedheader-that-contains-actions-for-logout-and-delete-account-keep-the-existing-delete-confirmation-dialog-and-preserve-current-disabled-loading-error-behavior-for-both-actions",
+      "featureTitle": "Replace the header’s direct Logout and Delete Account buttons with a small hamburger menu in AuthenticatedHeader that contains actions for Logout and Delete Account; keep the existing delete confirmation dialog and preserve current disabled/loading/error behavior for both actions.",
+      "files": [
+        "frontend/src/components/AccountActionsMenu.tsx",
+        "frontend/src/components/AuthenticatedHeader.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
       ],
       "confidence": "high"
     }

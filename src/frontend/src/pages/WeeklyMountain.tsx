@@ -88,10 +88,10 @@ export default function WeeklyMountain() {
     window.location.reload();
   };
 
+  // Stable handler using useCallback to prevent recreation on every render
   const handleStartOnboarding = useCallback(() => {
     console.log('[WeeklyMountain] Start Onboarding clicked, navigating to /onboarding');
-    // Navigate to onboarding step 1
-    navigate({ to: '/onboarding', replace: true });
+    navigate({ to: '/onboarding' });
   }, [navigate]);
 
   if (isLoading) {

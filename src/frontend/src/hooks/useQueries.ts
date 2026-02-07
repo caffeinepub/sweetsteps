@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
+import { useInternetIdentity } from './useInternetIdentity';
 import type { UserProfile } from '../backend';
 
 /**
@@ -7,6 +8,10 @@ import type { UserProfile } from '../backend';
  */
 export function useGetCallerUserProfile() {
   const { actor, isFetching: actorFetching } = useActor();
+  const { identity, isInitializing } = useInternetIdentity();
+
+  // Only run query when authenticated (not anonymous)
+  const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
 
   const query = useQuery<UserProfile | null>({
     queryKey: ['currentUserProfile'],
@@ -14,15 +19,16 @@ export function useGetCallerUserProfile() {
       if (!actor) throw new Error('Actor not available');
       return actor.getCallerUserProfile();
     },
-    enabled: !!actor && !actorFetching,
+    // Only enable when actor is ready, not fetching, auth is initialized, and user is authenticated
+    enabled: !!actor && !actorFetching && !isInitializing && isAuthenticated,
     retry: false,
   });
 
-  // Return custom state that properly reflects actor dependency
+  // Return custom state that properly reflects all dependencies
   return {
     ...query,
-    isLoading: actorFetching || query.isLoading,
-    isFetched: !!actor && query.isFetched,
+    isLoading: actorFetching || isInitializing || query.isLoading,
+    isFetched: !!actor && !isInitializing && isAuthenticated && query.isFetched,
   };
 }
 

@@ -32,7 +32,7 @@ export function IdentityConfirmationCard({
 
   return (
     <Card className="border-2 border-primary/20 bg-card/50">
-      <CardHeader className="space-y-2">
+      <CardHeader className="space-y-2 pb-3">
         <CardTitle className="text-xl font-semibold text-card-foreground flex items-center gap-2">
           <User className="w-5 h-5 text-primary" />
           {title}
@@ -41,8 +41,8 @@ export function IdentityConfirmationCard({
           {description}
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="bg-muted/50 rounded-lg p-4 border border-border space-y-2">
+      <CardContent className="space-y-3 pt-0">
+        <div className="bg-muted/50 rounded-lg p-3 border border-border space-y-2">
           {displayName && (
             <div>
               <p className="text-xs text-muted-foreground mb-1">Display Name</p>
@@ -61,10 +61,10 @@ export function IdentityConfirmationCard({
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           <Button
             size="lg"
-            className="w-full text-base font-semibold h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground"
+            className="w-full text-base font-semibold h-11 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={onContinue}
             disabled={isLoading}
           >
@@ -81,7 +81,7 @@ export function IdentityConfirmationCard({
           <Button
             size="lg"
             variant="outline"
-            className="w-full text-base font-semibold h-12 rounded-xl"
+            className="w-full text-base font-semibold h-11 rounded-xl"
             onClick={onSwitchIdentity}
             disabled={isLoading}
           >
