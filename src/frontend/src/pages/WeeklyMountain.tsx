@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useOnboardingResult } from '../contexts/OnboardingResultContext';
+import { useGetCallerUserProfile } from '../hooks/useQueries';
+import { useAuthStabilization } from '../hooks/useAuthStabilization';
 import { generateWeeklyMountain, type WeeklyMountainResponse } from '../lib/aiProxyClient';
 import AuthenticatedHeader from '../components/AuthenticatedHeader';
 
@@ -21,26 +23,43 @@ function getCurrentWeekId(): string {
 export default function WeeklyMountain() {
   const navigate = useNavigate();
   const { onboardingResult } = useOnboardingResult();
+  const { data: userProfile, isLoading: profileLoading, isFetched: profileFetched } = useGetCallerUserProfile();
+  const { isSettled, isAuthenticated } = useAuthStabilization();
 
   const [mountain, setMountain] = useState<WeeklyMountainResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMountain, setIsLoadingMountain] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Log onboarding result on mount for debugging
+  // Determine the goal source: prefer onboardingResult, fallback to backend profile
+  const goalFromOnboarding = onboardingResult?.aiResponse?.bigGoal;
+  const goalFromProfile = userProfile?.name; // Backend stores bigGoal in name field
+  const stableGoal = goalFromOnboarding || goalFromProfile;
+
+  // Log state on mount for debugging
   useEffect(() => {
     console.log('[WeeklyMountain] Component mounted');
+    console.log('[WeeklyMountain] Auth settled:', isSettled, 'Authenticated:', isAuthenticated);
     console.log('[WeeklyMountain] onboardingResult:', onboardingResult);
+    console.log('[WeeklyMountain] userProfile:', userProfile);
+    console.log('[WeeklyMountain] stableGoal:', stableGoal);
   }, []);
 
   useEffect(() => {
     const fetchWeeklyMountain = async () => {
-      if (!onboardingResult?.aiResponse?.bigGoal) {
-        console.log('[WeeklyMountain] No onboarding result, cannot fetch weekly mountain');
-        setIsLoading(false);
+      // Wait for auth to settle and profile to be fetched before deciding
+      if (!isSettled || profileLoading) {
+        console.log('[WeeklyMountain] Waiting for auth/profile resolution...');
         return;
       }
 
-      console.log('[WeeklyMountain] Fetching weekly mountain...');
+      // If no goal available from either source, we can't generate
+      if (!stableGoal) {
+        console.log('[WeeklyMountain] No goal available from onboarding or profile');
+        setIsLoadingMountain(false);
+        return;
+      }
+
+      console.log('[WeeklyMountain] Fetching weekly mountain with goal:', stableGoal);
       const currentWeekId = getCurrentWeekId();
       const storedWeekId = localStorage.getItem('sweetsteps_current_week');
       const storedMountain = localStorage.getItem('sweetsteps_weekly_mountain');
@@ -49,7 +68,7 @@ export default function WeeklyMountain() {
       if (storedWeekId === currentWeekId && storedMountain) {
         try {
           setMountain(JSON.parse(storedMountain));
-          setIsLoading(false);
+          setIsLoadingMountain(false);
           console.log('[WeeklyMountain] Using cached weekly mountain');
           return;
         } catch {
@@ -59,11 +78,11 @@ export default function WeeklyMountain() {
       }
 
       // Fetch new weekly mountain
-      setIsLoading(true);
+      setIsLoadingMountain(true);
       setError(null);
 
       try {
-        const newMountain = await generateWeeklyMountain(onboardingResult.aiResponse.bigGoal);
+        const newMountain = await generateWeeklyMountain(stableGoal);
         setMountain(newMountain);
         
         // Store for this week
@@ -75,12 +94,12 @@ export default function WeeklyMountain() {
         // Surface the error message from the AI proxy client
         setError(err.message || 'Unable to load weekly mountain. Please try again.');
       } finally {
-        setIsLoading(false);
+        setIsLoadingMountain(false);
       }
     };
 
     fetchWeeklyMountain();
-  }, [onboardingResult]);
+  }, [isSettled, profileLoading, stableGoal]);
 
   const handleRetry = () => {
     // Clear stored data and refetch
@@ -94,7 +113,20 @@ export default function WeeklyMountain() {
     navigate({ to: '/onboarding' });
   }, [navigate]);
 
-  if (isLoading) {
+  // Show loading while auth is settling or profile is loading
+  if (!isSettled || profileLoading) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6 py-16">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading while fetching mountain
+  if (isLoadingMountain) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6 py-16">
         <div className="flex flex-col items-center gap-4">
@@ -129,7 +161,21 @@ export default function WeeklyMountain() {
   // Use onboarding mountain as fallback
   const displayMountain = mountain || onboardingResult?.aiResponse?.weeklyMountain;
 
-  if (!displayMountain) {
+  // Only show "Onboarding Incomplete" if:
+  // 1. Auth is settled and authenticated
+  // 2. Profile query has completed
+  // 3. No backend profile exists
+  // 4. No onboarding result in context
+  // 5. No displayable mountain
+  const showOnboardingIncomplete = 
+    isSettled && 
+    isAuthenticated && 
+    profileFetched && 
+    !userProfile && 
+    !onboardingResult && 
+    !displayMountain;
+
+  if (showOnboardingIncomplete) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6 py-16">
         <div className="w-full max-w-2xl mx-auto space-y-4">
@@ -147,6 +193,30 @@ export default function WeeklyMountain() {
               className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               Start Onboarding
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If we still don't have a mountain to display, show a generic error
+  if (!displayMountain) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6 py-16">
+        <div className="w-full max-w-2xl mx-auto space-y-4">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Unable to load your weekly mountain. Please try refreshing the page.
+            </AlertDescription>
+          </Alert>
+          <div className="text-center">
+            <Button
+              onClick={handleRetry}
+              className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              Refresh
             </Button>
           </div>
         </div>

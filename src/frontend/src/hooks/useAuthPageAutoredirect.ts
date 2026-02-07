@@ -18,7 +18,7 @@ const SWEET_SUMMIT_SEEN_KEY = 'sweetsteps_sweet_summit_seen';
 export function useAuthPageAutoredirect() {
   const { identity, isInitializing } = useInternetIdentity();
   const { actor, isFetching: actorFetching } = useActor();
-  const { data: userProfile, isLoading: profileLoading, isFetched: profileFetched } = useGetCallerUserProfile();
+  const { data: userProfile, isLoading: profileLoading, isSettled: profileSettled } = useGetCallerUserProfile();
   const navigate = useNavigate();
   const hasRedirectedRef = useRef(false);
 
@@ -35,8 +35,9 @@ export function useAuthPageAutoredirect() {
     // Wait for actor to be ready
     if (!actor || actorFetching) return;
 
-    // Wait for profile query to complete
-    if (profileLoading || !profileFetched) return;
+    // CRITICAL FIX: Wait for profile query to be fully settled (not just fetched)
+    // This prevents redirects based on transient null values during loading
+    if (profileLoading || !profileSettled) return;
 
     // Now we have all the data we need - redirect based on profile status
     hasRedirectedRef.current = true;
@@ -64,7 +65,7 @@ export function useAuthPageAutoredirect() {
     actorFetching,
     userProfile,
     profileLoading,
-    profileFetched,
+    profileSettled,
     navigate,
   ]);
 

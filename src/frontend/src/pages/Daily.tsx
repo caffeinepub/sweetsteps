@@ -1,10 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
-import { Clock, Loader2, AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Clock, Loader2, AlertCircle, Mountain } from 'lucide-react';
+import { useNavigate } from '@tanstack/react-router';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import TaskModal from '@/components/TaskModal';
 import { useOnboardingResult } from '../contexts/OnboardingResultContext';
+import { useGetCallerUserProfile } from '../hooks/useQueries';
+import { useAuthStabilization } from '../hooks/useAuthStabilization';
 import { generateDailySteps, type DailyTask } from '../lib/aiProxyClient';
+import { deriveDailyInputs } from '../utils/dailyInputs';
 import AuthenticatedHeader from '../components/AuthenticatedHeader';
 import { useAddReward } from '../hooks/useRewards';
 import { RewardType } from '../backend';
@@ -20,7 +24,11 @@ const formatTodayDate = (): string => {
 };
 
 export default function Daily() {
+  const navigate = useNavigate();
   const { onboardingResult } = useOnboardingResult();
+  const { data: userProfile, isLoading: profileLoading, isFetched: profileFetched, isSettled: profileSettled } = useGetCallerUserProfile();
+  const { isSettled, isAuthenticated } = useAuthStabilization();
+
   const [tasks, setTasks] = useState<DailyTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,34 +42,53 @@ export default function Daily() {
 
   useEffect(() => {
     const fetchDailySteps = async () => {
-      if (!onboardingResult?.aiResponse?.bigGoal || !onboardingResult?.aiResponse?.weeklyMountain) {
-        setIsLoading(false);
-        setTasks([]); // Ensure tasks is always an array
+      // Wait for auth to settle and profile to be fetched before deciding
+      if (!isSettled || profileLoading) {
+        console.log('[Daily] Waiting for auth/profile resolution...');
         return;
       }
 
+      // Attempt to derive inputs from available sources
+      const goalFromOnboarding = onboardingResult?.aiResponse?.bigGoal;
+      const weeklyMountainFromOnboarding = onboardingResult?.aiResponse?.weeklyMountain;
+      const goalFromProfile = userProfile?.name; // Backend stores bigGoal in name field
+
+      const inputsResult = deriveDailyInputs(
+        goalFromOnboarding,
+        weeklyMountainFromOnboarding,
+        goalFromProfile
+      );
+
+      if (!inputsResult.success) {
+        console.log('[Daily] No valid inputs available from any source');
+        setIsLoading(false);
+        setTasks([]);
+        return;
+      }
+
+      console.log('[Daily] Using inputs from source:', inputsResult.source);
       setIsLoading(true);
       setError(null);
 
       try {
         const response = await generateDailySteps(
-          onboardingResult.aiResponse.bigGoal,
-          onboardingResult.aiResponse.weeklyMountain
+          inputsResult.inputs!.bigGoal,
+          inputsResult.inputs!.weeklyMountain
         );
         // Safely guard against missing or invalid tasks
         setTasks(Array.isArray(response?.tasks) ? response.tasks : []);
       } catch (err: any) {
-        console.error('Error fetching daily steps:', err);
+        console.error('[Daily] Error fetching daily steps:', err);
         // Surface the error message from the AI proxy client
         setError(err.message || 'Unable to load daily steps. Please try again.');
-        setTasks([]); // Ensure tasks is always an array even on error
+        setTasks([]);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchDailySteps();
-  }, [onboardingResult]);
+  }, [isSettled, profileLoading, onboardingResult, userProfile]);
 
   const handleTaskClick = (task: DailyTask) => {
     setSelectedTask(task);
@@ -103,6 +130,28 @@ export default function Daily() {
     window.location.reload();
   };
 
+  const handleViewWeeklyMountain = () => {
+    navigate({ to: '/weekly-mountain' });
+  };
+
+  const handleStartOnboarding = () => {
+    console.log('[Daily] Start Onboarding clicked, navigating to /onboarding');
+    navigate({ to: '/onboarding' });
+  };
+
+  // Show loading while auth is settling or profile is loading
+  if (!isSettled || profileLoading) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6 py-16">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading while fetching daily steps
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6 py-16">
@@ -114,6 +163,7 @@ export default function Daily() {
     );
   }
 
+  // Show AI proxy error (network/API failures)
   if (error) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6 py-16">
@@ -135,16 +185,50 @@ export default function Daily() {
     );
   }
 
-  if (!onboardingResult) {
+  // Determine if inputs are available from any source
+  const goalFromOnboarding = onboardingResult?.aiResponse?.bigGoal;
+  const weeklyMountainFromOnboarding = onboardingResult?.aiResponse?.weeklyMountain;
+  const goalFromProfile = userProfile?.name;
+
+  const inputsResult = deriveDailyInputs(
+    goalFromOnboarding,
+    weeklyMountainFromOnboarding,
+    goalFromProfile
+  );
+
+  // Only show "Onboarding Incomplete" if:
+  // 1. Auth is settled and authenticated
+  // 2. Profile query has completed (settled)
+  // 3. No backend profile exists
+  // 4. No onboarding result in context
+  // 5. No valid inputs can be derived
+  const showOnboardingIncomplete = 
+    isSettled && 
+    isAuthenticated && 
+    profileSettled && 
+    !userProfile && 
+    !onboardingResult && 
+    !inputsResult.success;
+
+  if (showOnboardingIncomplete) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6 py-16">
-        <div className="w-full max-w-2xl mx-auto">
+        <div className="w-full max-w-2xl mx-auto space-y-4">
           <Alert>
             <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Onboarding Incomplete</AlertTitle>
             <AlertDescription>
-              No onboarding data found. Please complete onboarding first.
+              You haven't finished onboarding yet. Let's get you started!
             </AlertDescription>
           </Alert>
+          <div className="text-center">
+            <Button
+              onClick={handleStartOnboarding}
+              className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              Start Onboarding
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -158,13 +242,25 @@ export default function Daily() {
         <AuthenticatedHeader title="Today's SweetSteps" subtitle={formatTodayDate()} />
 
         {/* Main Content */}
-        <main className="max-w-4xl mx-auto px-6 py-12">
+        <main className="max-w-4xl mx-auto px-6 py-12 space-y-6">
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
               No tasks available yet. Your daily steps will appear here once generated.
             </AlertDescription>
           </Alert>
+
+          {/* View Weekly Mountain Button */}
+          <div className="flex justify-center">
+            <Button
+              onClick={handleViewWeeklyMountain}
+              variant="outline"
+              className="rounded-xl"
+            >
+              <Mountain className="mr-2 h-4 w-4" />
+              View Weekly Mountain
+            </Button>
+          </div>
         </main>
 
         {/* Footer */}
@@ -193,7 +289,7 @@ export default function Daily() {
       <AuthenticatedHeader title="Today's SweetSteps" subtitle={formatTodayDate()} />
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-6 py-12">
+      <main className="max-w-4xl mx-auto px-6 py-12 space-y-6">
         <div className="space-y-4">
           {tasks.map((task, index) => (
             <div 
@@ -212,6 +308,18 @@ export default function Daily() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* View Weekly Mountain Button */}
+        <div className="flex justify-center pt-4">
+          <Button
+            onClick={handleViewWeeklyMountain}
+            variant="outline"
+            className="rounded-xl"
+          >
+            <Mountain className="mr-2 h-4 w-4" />
+            View Weekly Mountain
+          </Button>
         </div>
       </main>
 

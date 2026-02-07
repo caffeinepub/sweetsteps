@@ -1,16 +1,32 @@
-import { useState, useEffect } from 'react';
-import { Link } from '@tanstack/react-router';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { X, ChevronLeft, ChevronRight, Mountain } from 'lucide-react';
 import { useCanisterWarmup } from '../hooks/useCanisterWarmup';
+import { useInternetIdentity } from '../hooks/useInternetIdentity';
+import { useAuthAttemptGuard } from '../hooks/useAuthAttemptGuard';
+import { useAuthStabilization } from '../hooks/useAuthStabilization';
+import { useActor } from '../hooks/useActor';
+import { useGetCallerUserProfile } from '../hooks/useQueries';
 
 export default function Landing() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const navigate = useNavigate();
 
   // Pre-warm the canister automatically on mount
   useCanisterWarmup(true);
+
+  // Auth hooks for first button
+  const { login, identity } = useInternetIdentity();
+  const { startAttempt, endAttempt, isAttempting } = useAuthAttemptGuard();
+  const { phase: authPhase } = useAuthStabilization();
+  const { actor, isFetching: actorFetching } = useActor();
+  const { data: userProfile, isFetched: profileFetched, isLoading: profileLoading } = useGetCallerUserProfile();
+
+  // Track if we've already navigated for this login attempt
+  const hasNavigatedRef = useRef(false);
 
   const features = [
     {
@@ -65,6 +81,101 @@ export default function Landing() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isModalOpen, currentSlide]);
 
+  // Handle first button click - II login with routing
+  const handleContinueWithII = useCallback(async () => {
+    // Prevent duplicate attempts
+    if (isAttempting) {
+      console.log('[Landing] Already attempting login, ignoring click');
+      return;
+    }
+
+    // Start attempt guard
+    const started = startAttempt();
+    if (!started) {
+      console.log('[Landing] Failed to start attempt (already in progress)');
+      return;
+    }
+
+    // Reset navigation flag for this new attempt
+    hasNavigatedRef.current = false;
+
+    try {
+      console.log('[Landing] Starting II login...');
+      await login();
+      // Login initiated - wait for auth to settle and profile to load
+      // The useEffect below will handle routing once ready
+    } catch (error) {
+      console.error('[Landing] Login failed:', error);
+      endAttempt();
+      hasNavigatedRef.current = false;
+    }
+  }, [isAttempting, startAttempt, endAttempt, login]);
+
+  // Effect to handle post-login routing
+  useEffect(() => {
+    // Only proceed if we're attempting login and haven't navigated yet
+    if (!isAttempting || hasNavigatedRef.current) {
+      return;
+    }
+
+    // Wait for auth to be settled
+    const isAuthSettled = authPhase === 'settled-authenticated' || authPhase === 'settled-unauthenticated';
+    if (!isAuthSettled) {
+      console.log('[Landing] Waiting for auth to settle, current phase:', authPhase);
+      return;
+    }
+
+    // Check if authenticated
+    const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
+    if (!isAuthenticated) {
+      console.log('[Landing] Auth settled but not authenticated, ending attempt');
+      endAttempt();
+      hasNavigatedRef.current = false;
+      return;
+    }
+
+    // Wait for actor to be ready
+    if (!actor || actorFetching) {
+      console.log('[Landing] Waiting for actor to be ready');
+      return;
+    }
+
+    // Wait for profile query to complete
+    if (profileLoading || !profileFetched) {
+      console.log('[Landing] Waiting for profile query to complete');
+      return;
+    }
+
+    // All conditions met - make routing decision
+    console.log('[Landing] All conditions met, making routing decision');
+    console.log('[Landing] Profile exists:', userProfile !== null);
+
+    // Mark as navigated before navigating to prevent duplicate navigation
+    hasNavigatedRef.current = true;
+
+    if (userProfile === null) {
+      console.log('[Landing] No profile found, navigating to /onboarding');
+      navigate({ to: '/onboarding' });
+    } else {
+      console.log('[Landing] Profile found, navigating to /weekly-mountain');
+      navigate({ to: '/weekly-mountain' });
+    }
+
+    // End attempt after navigation
+    endAttempt();
+  }, [
+    isAttempting,
+    authPhase,
+    identity,
+    actor,
+    actorFetching,
+    profileLoading,
+    profileFetched,
+    userProfile,
+    navigate,
+    endAttempt
+  ]);
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       {/* Hero Section */}
@@ -92,28 +203,23 @@ export default function Landing() {
 
           {/* Action Buttons */}
           <div className="flex flex-col gap-3 w-full max-w-md mx-auto pt-4">
-            <Link to="/signup">
-              <Button 
-                size="lg" 
-                className="w-full text-base font-semibold h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground"
-              >
-                Start Climbing
-              </Button>
-            </Link>
+            <Button 
+              size="lg" 
+              className="w-full text-base font-semibold h-14 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground"
+              onClick={handleContinueWithII}
+              disabled={isAttempting}
+            >
+              {isAttempting ? 'Connecting...' : 'Continue with Internet Identity'}
+            </Button>
             
-            <Link to="/login">
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="w-full text-base font-semibold h-12 rounded-xl border-border bg-card hover:bg-muted text-foreground"
-              >
-                Continue Climbing
-              </Button>
+            <Link to="/signup">
+              {/* Empty Link wrapper kept as requested */}
             </Link>
             
             <Button 
               size="lg" 
-              className="w-full text-base font-semibold h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground"
+              variant="outline"
+              className="w-full text-base font-semibold h-12 rounded-xl border-border bg-card hover:bg-muted text-foreground"
               onClick={() => setIsModalOpen(true)}
             >
               Why SweetSteps?

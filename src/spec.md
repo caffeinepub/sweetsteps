@@ -1,11 +1,10 @@
 # Specification
 
 ## Summary
-**Goal:** Fix identity confirmation card clipping/overflow issues on small screens and move account actions into a hamburger menu in the authenticated header.
+**Goal:** Make the Landing page “Continue with Internet Identity” button match the Weekly Mountain primary button styling and render as text-only.
 
 **Planned changes:**
-- Update the identity confirmation card styling to use fully content-driven (auto) height, slightly reduce internal padding where needed, and ensure long text (e.g., principal) wraps/breaks to avoid horizontal overflow.
-- Reduce the top/bottom padding of the parent container that wraps the card to prevent vertical overflow while keeping reasonable left/right padding.
-- Replace direct Logout and Delete Account header buttons with a hamburger menu in `AuthenticatedHeader` containing both actions, preserving existing delete confirmation dialog and current disabled/loading/error behaviors.
+- Update only the Landing page button at `/html[1]/body[1]/div[1]/div[1]/main[1]/div[2]/button[1]` to use the same Tailwind class styling as the Weekly Mountain primary button (“View Today’s SweetSteps”) for height, typography, rounding, background, hover background, and text color.
+- Remove the mountain icon from inside that same Landing button so it displays text-only, keeping the existing label states (“Continue with Internet Identity” / “Connecting...”) and current click/disabled behavior unchanged.
 
-**User-visible outcome:** The identity confirmation card content is no longer cut off on small screens, the page no longer overflows due to excessive padding, and Logout/Delete Account are accessed via a hamburger menu while behaving the same as before.
+**User-visible outcome:** On the Landing page, the “Continue with Internet Identity” button looks identical (styling-wise) to the Weekly Mountain primary button and no longer shows a mountain icon inside it.

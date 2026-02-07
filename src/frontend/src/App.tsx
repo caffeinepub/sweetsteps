@@ -1,8 +1,7 @@
-import { createRouter, RouterProvider, createRoute, createRootRoute } from '@tanstack/react-router';
+import { createRouter, RouterProvider, createRoute, createRootRoute, redirect } from '@tanstack/react-router';
 import RootLayout from './components/RootLayout';
 import Landing from './pages/Landing';
 import Signup from './pages/Signup';
-import Login from './pages/Login';
 import Onboarding from './pages/Onboarding';
 import SweetSummit from './pages/SweetSummit';
 import WeeklyMountain from './pages/WeeklyMountain';
@@ -26,10 +25,13 @@ const signupRoute = createRoute({
   component: Signup
 });
 
+// Redirect /login to /signup
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/login',
-  component: Login
+  beforeLoad: () => {
+    throw redirect({ to: '/signup' });
+  }
 });
 
 const signupTestRoute = createRoute({

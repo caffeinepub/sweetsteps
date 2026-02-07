@@ -1,81 +1,53 @@
 {
   "kind": "build_request",
-  "title": "Fix auth card layout overflow and move account actions into a hamburger menu",
+  "title": "Match Landing ‘Continue with Internet Identity’ button styling to Weekly Mountain and remove icon inside button",
   "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Adjust the identity confirmation card so its content is never cut off: make the card height fully auto (no implicit/explicit fixed height constraints), reduce internal padding slightly where needed, and ensure long text (e.g., principal) wraps without overflowing.",
+      "text": "Update ONLY the selected button at XPath /html[1]/body[1]/div[1]/div[1]/main[1]/div[2]/button[1] (the Landing page “Continue with Internet Identity” button) to use the exact same visual styling as the Weekly Mountain page primary button labeled “View Today's SweetSteps” (same Tailwind class styling for height, typography, rounding, background, hover, and text colors).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1",
-          "msg-2"
+          "user-ctx-1",
+          "conv-ctx-1"
         ],
         "quotes": [
-          "Bro can you please increase the height of this card, as it is cutting off some text. Feel free to reduce its padding a little.",
-          "2. Yes"
+          "can you please make the styling of this button the exact exact same as the \"view today's daily Steps\" button in the weekly mountain page?",
+          "Use the XPath expression to identify the element to edit.\n\nElement 1:\n- XPath:\n/html[1]/body[1]/div[1]/div[1]/main[1]/div[2]/button[1]"
         ]
       },
       "acceptanceCriteria": [
-        "On small screens, all card text is fully visible without being clipped.",
-        "The card uses content-driven (auto) height rather than a fixed height that can truncate text.",
-        "Padding is slightly reduced compared to current styling while maintaining readability.",
-        "Long principal strings still wrap (break-all) and do not cause horizontal overflow."
+        "In frontend/src/pages/Landing.tsx, the ‘Continue with Internet Identity’ <Button> uses the same Tailwind class styling as the Weekly Mountain primary button (‘View Today's SweetSteps’) for: height, font size/weight, border radius, background color, hover background color, and text color.",
+        "No other elements on the Landing page are modified (no layout, text, routing, logic, or other component changes beyond this one button element)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Reduce the padding of the parent container that wraps the affected card to eliminate overflow, with a significant reduction primarily on top/bottom while preserving reasonable left/right padding.",
+      "text": "Remove the mountain icon from inside ONLY the selected button at XPath /html[1]/body[1]/div[1]/div[1]/main[1]/div[2]/button[1] so the button content renders as text-only (keep the existing button label/behavior unchanged).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1",
-          "msg-3"
+          "conv-ctx-1"
         ],
         "quotes": [
-          "And also, it's parent container has too much padding, which is causing overflow.",
-          "Mainly top/bottom"
+          "I'm talking about the mountain icon that's inside the button itself"
         ]
       },
       "acceptanceCriteria": [
-        "The page containing the affected card no longer overflows vertically due to excessive top/bottom padding.",
-        "Top/bottom padding is significantly tighter than before; left/right padding remains comfortable.",
-        "No horizontal scrollbar is introduced by the container spacing changes."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Replace the header’s direct Logout and Delete Account buttons with a small hamburger menu in AuthenticatedHeader that contains actions for Logout and Delete Account; keep the existing delete confirmation dialog and preserve current disabled/loading/error behavior for both actions.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1",
-          "msg-4"
-        ],
-        "quotes": [
-          "Also, can you please add a little hamburger nav that contains the logout and delete account options instead of them being directly in the header?",
-          "Yes I want you to apply all the specified changes, even though i have selected only the card."
-        ]
-      },
-      "acceptanceCriteria": [
-        "AuthenticatedHeader no longer shows Logout/Delete buttons directly in the header layout; instead, a hamburger trigger opens a menu containing both actions.",
-        "Clicking Logout from the menu performs the same logout flow as before (identity cleared, React Query cache cleared, onboarding/session cleared, navigates to '/').",
-        "Clicking Delete Account from the menu opens the existing confirmation dialog and, upon confirmation, performs the same deletion flow as before (calls deleteCallerUserData, clears session/caches, navigates to '/').",
-        "While an action is in progress, the menu actions are disabled appropriately and loading state is still communicated to the user.",
-        "Any existing delete error message handling continues to work and remains visible when relevant."
+        "The selected button renders without any Mountain icon (no lucide Mountain component, SVG, emoji, or leading icon element inside the button).",
+        "The button label remains in English and remains the existing text (‘Continue with Internet Identity’ / ‘Connecting...’) and the click handler/disabled behavior is unchanged."
       ]
     }
   ],
   "constraints": [
-    "Use English for any user-facing text.",
-    "Do not edit files under frontend/src/components/ui (compose existing shadcn components instead).",
-    "Respect existing single-backend-actor architecture; no backend changes are required for these UI/layout updates."
+    "Apply changes ONLY to the selected element identified by XPath /html[1]/body[1]/div[1]/div[1]/main[1]/div[2]/button[1].",
+    "Do not change any other UI elements, page content, routes, or authentication logic.",
+    "Do not edit any files under frontend/src/components/ui (read-only); implement styling changes by adjusting props/classes where the selected button is declared."
   ],
   "nonGoals": [
-    "Adding new account actions beyond Logout and Delete Account.",
-    "Changing backend deleteCallerUserData behavior or data model.",
-    "Reworking overall app navigation or authentication logic beyond the requested layout/menu changes."
+    "Fixing or changing the Internet Identity authentication flow behavior (redirects, retries, stall handling).",
+    "Restyling any other buttons (e.g., ‘Why SweetSteps?’) or removing the hero mountain icon outside the button."
   ],
   "imageRequirements": {
     "required": [],

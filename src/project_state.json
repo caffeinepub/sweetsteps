@@ -1,32 +1,24 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "UI/UX improvements to authentication and layout: remove login warmup delay, adjust card/container spacing to prevent text cutoff/overflow, and move account actions into a hamburger menu in the header.",
+  "summary": "New project",
   "architectural_notes": [],
   "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-adjust-the-identity-confirmation-card-so-its-content-is-never-cut-off-make-the-card-height-fully-auto-no-implicit-explicit-fixed-height-constraints-reduce-internal-padding-slightly-where-needed-and-ensure-long-text-e-g-principal-wraps-without-overflowing",
-      "title": "Adjust the identity confirmation card so its content is never cut off: make the card height fully auto (no implicit/explicit fixed height constraints), reduce internal padding slightly where needed, and ensure long text (e.g., principal) wraps without overflowing.",
+      "id": "feature-update-only-the-selected-button-at-xpath-html-1-body-1-div-1-div-1-main-1-div-2-button-1-the-landing-page-continue-with-internet-identity-button-to-use-the-exact-same-visual-styling-as-the-weekly-mountain-page-primary-button-labeled-view-today-s-sweetsteps-same-tailwind-class-styling-for-height-typography-rounding-background-hover-and-text-colors",
+      "title": "Update ONLY the selected button at XPath /html[1]/body[1]/div[1]/div[1]/main[1]/div[2]/button[1] (the Landing page “Continue with Internet Identity” button) to use the exact same visual styling as the Weekly Mountain page primary button labeled “View Today's SweetSteps” (same Tailwind class styling for height, typography, rounding, background, hover, and text colors).",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-reduce-the-padding-of-the-parent-container-that-wraps-the-affected-card-to-eliminate-overflow-with-a-significant-reduction-primarily-on-top-bottom-while-preserving-reasonable-left-right-padding",
-      "title": "Reduce the padding of the parent container that wraps the affected card to eliminate overflow, with a significant reduction primarily on top/bottom while preserving reasonable left/right padding.",
+      "id": "feature-remove-the-mountain-icon-from-inside-only-the-selected-button-at-xpath-html-1-body-1-div-1-div-1-main-1-div-2-button-1-so-the-button-content-renders-as-text-only-keep-the-existing-button-label-behavior-unchanged",
+      "title": "Remove the mountain icon from inside ONLY the selected button at XPath /html[1]/body[1]/div[1]/div[1]/main[1]/div[2]/button[1] so the button content renders as text-only (keep the existing button label/behavior unchanged).",
       "reqIds": [
         "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-replace-the-header-s-direct-logout-and-delete-account-buttons-with-a-small-hamburger-menu-in-authenticatedheader-that-contains-actions-for-logout-and-delete-account-keep-the-existing-delete-confirmation-dialog-and-preserve-current-disabled-loading-error-behavior-for-both-actions",
-      "title": "Replace the header’s direct Logout and Delete Account buttons with a small hamburger menu in AuthenticatedHeader that contains actions for Logout and Delete Account; keep the existing delete confirmation dialog and preserve current disabled/loading/error behavior for both actions.",
-      "reqIds": [
-        "REQ-3"
       ],
       "version": 1
     }
@@ -34,30 +26,12 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Make Internet Identity authentication open instantly with zero warmup (no backend warmup call, no delay before popup).",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Fix layout issues: increase card height (use auto-height) and reduce card padding so text isn’t cut off.",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Significantly reduce the parent container padding (mainly top/bottom) to prevent overflow.",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-4",
-      "summary": "Add a hamburger navigation menu in the header containing Logout and Delete Account options instead of showing them directly in the header.",
+      "summary": "Restyle the specified button to exactly match the 'View today’s daily steps' button on the Weekly Mountain page, and remove the mountain icon inside that button (no other changes).",
       "reqIds": [],
       "status": "pending"
     }
   ],
-  "projectName": "Fix auth card layout overflow and move account actions into a hamburger menu",
+  "projectName": "Match Landing ‘Continue with Internet Identity’ button styling to Weekly Mountain and remove icon inside button",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

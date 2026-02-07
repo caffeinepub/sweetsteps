@@ -9,8 +9,10 @@ import { useMobileInternetIdentityLoginPatched } from '../hooks/useMobileInterne
 import { useAuthFlowDiagnostics } from '../hooks/useAuthFlowDiagnostics';
 import { useCanisterWarmup } from '../hooks/useCanisterWarmup';
 import { usePostAuthTimeout } from '../hooks/usePostAuthTimeout';
+import { useAuthPageAutoredirect } from '../hooks/useAuthPageAutoredirect';
 import { isIdentityValid, isSessionStale } from '../utils/identityValidation';
 import { getPlatformInfo, isChromeAndroid } from '../utils/platform';
+import { setNewAccountFlag } from '../utils/sessionFlags';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
@@ -20,29 +22,26 @@ import { AuthDiagnosticsPanel } from '../components/auth/AuthDiagnosticsPanel';
 import { AuthStatusBanner } from '../components/auth/AuthStatusBanner';
 import { CanisterWarmupBanner } from '../components/auth/CanisterWarmupBanner';
 import { getUrlParameter } from '../utils/urlParams';
-import { setNewAccountFlag } from '../utils/sessionFlags';
 
-type AttemptPhase = 'idle' | 'connecting' | 'validating' | 'checking-profile' | 'waiting-for-display-name' | 'error';
+type AttemptPhase = 'idle' | 'connecting' | 'validating' | 'checking-profile' | 'waiting-for-display-name' | 'redirecting' | 'error';
 
 export default function Signup() {
-  const { login: iiLogin, clear: iiClear, loginError: iiLoginError, identity: iiIdentity, loginStatus: iiLoginStatus, isInitializing: iiInitializing } = useInternetIdentity();
+  const { login: iiLogin, clear: iiClear, loginError: iiLoginError, identity: iiIdentity, loginStatus: iiLoginStatus, isInitializing: iiInitializing, isLoggingIn: iiIsLoggingIn } = useInternetIdentity();
   const { actor, isFetching: actorFetching } = useActor();
-  const { data: userProfile, isLoading: profileLoading, isFetched: profileFetched } = useGetCallerUserProfile();
+  const { data: userProfile, isLoading: profileLoading, isSettled: profileSettled } = useGetCallerUserProfile();
   const navigate = useNavigate();
   
   const [attemptPhase, setAttemptPhase] = useState<AttemptPhase>('idle');
   const [validatedIdentity, setValidatedIdentity] = useState<boolean>(false);
-  const [profileCheckError, setProfileCheckError] = useState<string | null>(null);
   const [mobileLoginError, setMobileLoginError] = useState<string | null>(null);
   
   // Track if user has initiated auth in this visit
   const userInitiatedAuthRef = useRef(false);
   
-  const { isAttempting, startAttempt, endAttempt, getAttemptTimestamp, getElapsedMs, forceReset } = useAuthAttemptGuard();
-  const stalledState = useStalledAuthDetection(getAttemptTimestamp(), iiLoginStatus, iiIdentity, 
+  const { isAttempting, startAttempt, endAttempt, getAttemptTimestamp, getElapsedMs, forceReset, hasUserInitiatedAuth } = useAuthAttemptGuard();
+  const stalledState = useStalledAuthDetection(getAttemptTimestamp(), iiLoginStatus, iiIdentity,
     attemptPhase === 'connecting' ? 'ii-popup-open' : 
-    attemptPhase === 'validating' ? 'identity-validation' :
-    attemptPhase === 'checking-profile' ? 'onboarding-check' : undefined
+    attemptPhase === 'validating' ? 'identity-validation' : undefined
   );
   
   // Auth flow diagnostics
@@ -63,6 +62,9 @@ export default function Signup() {
   // Check for debug mode
   const debugAuth = getUrlParameter('debugAuth') === '1';
   const platformInfo = getPlatformInfo();
+
+  // Auto-redirect if already authenticated
+  const { isRedirecting } = useAuthPageAutoredirect();
 
   // Post-auth timeout for validation phase
   const validationTimeout = usePostAuthTimeout({
@@ -85,18 +87,6 @@ export default function Signup() {
       setMobileLoginError('Connection to backend took too long. Please try again.');
       endAttempt();
       diagnostics.completeAttempt('error', 'Actor ready timeout');
-    },
-  });
-
-  // Post-auth timeout for profile check phase
-  const profileCheckTimeout = usePostAuthTimeout({
-    phase: attemptPhase === 'checking-profile' ? 'onboarding-check' : null,
-    onTimeout: () => {
-      console.warn('Profile check timed out');
-      setAttemptPhase('error');
-      setProfileCheckError('Profile check took too long. Please try again.');
-      endAttempt();
-      diagnostics.completeAttempt('error', 'Profile check timeout');
     },
   });
 
@@ -240,60 +230,56 @@ export default function Signup() {
     }
   }, [iiIdentity, attemptPhase, diagnostics, validationTimeout]);
 
-  // Check profile status after validation - ONLY if user initiated auth
+  // Check profile and set flag - ONLY if user initiated auth
   useEffect(() => {
-    const checkProfile = async () => {
+    const checkProfileAndSetFlag = async () => {
       // CRITICAL: Only proceed if user initiated auth in this visit
       if (!userInitiatedAuthRef.current) {
         return;
       }
 
-      // Only proceed if we have a validated identity and actor is ready
       if (!validatedIdentity || !iiIdentity || !actor || actorFetching) return;
       
       // Don't run if we're already checking or waiting
       if (attemptPhase === 'checking-profile' || attemptPhase === 'waiting-for-display-name') return;
 
       setAttemptPhase('checking-profile');
-      setProfileCheckError(null);
       diagnostics.transitionStep('onboarding-check');
       
       try {
-        // Wait for profile to be fetched
-        if (profileLoading || !profileFetched) {
+        // CRITICAL FIX: Wait for profile query to be fully settled
+        if (profileLoading || !profileSettled) {
           return;
         }
 
-        profileCheckTimeout.reset();
+        actorReadyTimeout.reset();
         
-        // If profile is null, this is a new account
+        // If profile is null, this is a new account - set the session flag and wait for display name
         if (userProfile === null) {
-          console.log('[Signup] New account detected, setting new-account flag');
+          console.log('[Signup] New account detected, setting flag and waiting for display name modal');
           setNewAccountFlag();
           setAttemptPhase('waiting-for-display-name');
-          diagnostics.completeAttempt('success', 'New account - waiting for display name');
-          // PostAuthDisplayNameGate will handle the display name prompt and navigation
+          // Note: Not calling diagnostics.transitionStep here as 'waiting-for-display-name' is not a valid AuthStep
+          // The PostAuthDisplayNameGate will now show the modal
+          // After the modal is closed (save/skip), it will clear the flag and navigate to onboarding
         } else {
-          // Profile exists - user already has an account
-          console.log('[Signup] Existing account detected, navigating to /weekly-mountain');
-          diagnostics.transitionStep('navigation', { destination: '/weekly-mountain' });
+          // Existing profile - go to weekly-mountain
+          setAttemptPhase('redirecting');
+          diagnostics.transitionStep('navigation', { destination: '/weekly-mountain', newAccount: false });
           navigate({ to: '/weekly-mountain' });
-          diagnostics.completeAttempt('success', 'Existing account - redirected to weekly mountain');
+          diagnostics.completeAttempt('success', 'Signup flow completed');
         }
       } catch (err) {
         console.error('Error checking profile:', err);
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-        setProfileCheckError(
-          `Failed to check your profile: ${errorMessage}. Please try again or return to the landing page.`
-        );
         setAttemptPhase('error');
+        setMobileLoginError('Failed to check account status. Please try again.');
         endAttempt();
-        diagnostics.completeAttempt('error', `Profile check failed: ${errorMessage}`);
+        diagnostics.completeAttempt('error', 'Profile check failed');
       }
     };
 
-    checkProfile();
-  }, [validatedIdentity, iiIdentity, actor, actorFetching, navigate, attemptPhase, endAttempt, diagnostics, profileCheckTimeout, userProfile, profileLoading, profileFetched]);
+    checkProfileAndSetFlag();
+  }, [validatedIdentity, iiIdentity, actor, actorFetching, navigate, attemptPhase, diagnostics, actorReadyTimeout, userProfile, profileLoading, profileSettled, endAttempt]);
 
   // Track login status changes (II only) - ONLY if user initiated auth
   useEffect(() => {
@@ -328,24 +314,11 @@ export default function Signup() {
       popupOpenDetectedRef.current = false;
       setAttemptPhase('error');
       endAttempt();
-      diagnostics.completeAttempt('error', iiLoginError?.message || 'Login error');
+      diagnostics.completeAttempt('error', iiLoginError?.message || 'Signup error');
     }
   }, [iiLoginStatus, attemptPhase, endAttempt, diagnostics, iiLoginError, iiIdentity]);
 
-  // Track actor readiness - ONLY if user initiated auth
-  useEffect(() => {
-    // CRITICAL: Only track actor if user initiated auth in this visit
-    if (!userInitiatedAuthRef.current) {
-      return;
-    }
-
-    if (attemptPhase === 'validating' && validatedIdentity && actor && !actorFetching) {
-      diagnostics.transitionStep('actor-ready');
-      actorReadyTimeout.reset();
-    }
-  }, [attemptPhase, validatedIdentity, actor, actorFetching, diagnostics, actorReadyTimeout]);
-
-  const handleIISignup = useCallback(async () => {
+  const handleSignup = useCallback(async () => {
     if (isAttempting) {
       console.warn('Auth attempt already in progress');
       return;
@@ -354,17 +327,15 @@ export default function Signup() {
     // Mark that user has initiated auth in this visit
     userInitiatedAuthRef.current = true;
 
-    // Reset error states
+    // Clear any previous errors
     setMobileLoginError(null);
-    setProfileCheckError(null);
     
-    // Clear any existing identity first to force account selection
-    await iiClear();
-    
-    // Start attempt guard
+    // Start the attempt guard
     startAttempt();
-    setAttemptPhase('connecting');
     diagnostics.startAttempt();
+    
+    // Set phase to connecting
+    setAttemptPhase('connecting');
     diagnostics.transitionStep('ii-initiation');
     
     // Mark that we're waiting for II popup result
@@ -374,12 +345,9 @@ export default function Signup() {
     try {
       if (isChromeAndroid()) {
         // Use mobile-safe login for Chrome Android
-        const outcome = await mobileLogin.login();
+        const result = await mobileLogin.login();
         
-        if (outcome.success) {
-          // Success handled by useEffect watching iiLoginStatus
-          console.log('[Signup] Mobile signup succeeded');
-        } else if (outcome.blocked) {
+        if (result.blocked) {
           waitingForIIRef.current = false;
           popupOpenDetectedRef.current = false;
           setAttemptPhase('error');
@@ -388,183 +356,147 @@ export default function Signup() {
           );
           endAttempt();
           diagnostics.completeAttempt('error', 'Mobile popup blocked');
-        } else if (outcome.cancelled) {
+        } else if (result.cancelled) {
           waitingForIIRef.current = false;
           popupOpenDetectedRef.current = false;
           setAttemptPhase('idle');
+          setMobileLoginError(null);
           endAttempt();
-          diagnostics.completeAttempt('error', 'User cancelled authentication');
+          diagnostics.completeAttempt('error', 'User cancelled mobile login');
         }
+        // If success, the identity will be set and other effects will handle it
       } else {
-        // Use standard II login for desktop (will show account chooser/create new)
+        // Use standard desktop login
         await iiLogin();
-        // Success/error handled by useEffect watching iiLoginStatus
       }
-    } catch (error: any) {
-      console.error('[Signup] Signup error:', error);
+    } catch (err: any) {
+      console.error('Signup error:', err);
       waitingForIIRef.current = false;
       popupOpenDetectedRef.current = false;
       setAttemptPhase('error');
-      setMobileLoginError(error.message || 'An unexpected error occurred during signup');
+      setMobileLoginError(err.message || 'An unexpected error occurred. Please try again.');
       endAttempt();
-      diagnostics.completeAttempt('error', error.message || 'Signup exception');
+      diagnostics.completeAttempt('error', err.message || 'Signup exception');
     }
-  }, [isAttempting, startAttempt, endAttempt, iiLogin, iiClear, mobileLogin, diagnostics]);
+  }, [isAttempting, startAttempt, endAttempt, iiLogin, mobileLogin, diagnostics]);
 
   const handleRetry = useCallback(() => {
     // Reset all state
     forceReset();
     setAttemptPhase('idle');
-    setMobileLoginError(null);
-    setProfileCheckError(null);
     setValidatedIdentity(false);
+    setMobileLoginError(null);
     waitingForIIRef.current = false;
     popupOpenDetectedRef.current = false;
     diagnostics.reset();
-    
-    // Retry signup
-    setTimeout(() => handleIISignup(), 100);
-  }, [forceReset, handleIISignup, diagnostics]);
+  }, [forceReset, diagnostics]);
 
   const handleReturnToLanding = useCallback(() => {
     navigate({ to: '/' });
   }, [navigate]);
 
-  // Show warmup banner if warming up or failed
-  const showWarmupBanner = warmup.state === 'warming' || warmup.state === 'failed';
-
-  // Show error panel if we have an error
-  const showErrorPanel = attemptPhase === 'error' && (mobileLoginError || profileCheckError);
-
-  // Show help panel if stalled on connecting
-  const showHelpPanel = stalledState.isStalled && attemptPhase === 'connecting';
-
-  // Determine if signup button should be disabled
-  const isSignupDisabled = 
-    isAttempting || 
-    attemptPhase !== 'idle' || 
-    warmup.state === 'warming' ||
-    iiInitializing;
+  // Show loading while auto-redirecting
+  if (isRedirecting) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6 py-16">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Redirecting...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Warmup Banner */}
-      {showWarmupBanner && (
-        <div className="w-full">
+    <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center px-6 py-16">
+      <div className="w-full max-w-md space-y-6">
+        {/* Canister Warmup Banner */}
+        {warmup.state !== 'ready' && (
           <CanisterWarmupBanner
             state={warmup.state}
             onRetry={warmup.retry}
           />
-        </div>
-      )}
+        )}
 
-      {/* Auth Status Banner (only in debug mode) */}
-      {debugAuth && (
-        <AuthStatusBanner
-          flowState={diagnostics.state}
-          onRetry={handleRetry}
-        />
-      )}
+        {/* Auth Status Banner (only in debug mode or when there's an active attempt) */}
+        {(debugAuth || diagnostics.state.currentStep !== 'idle') && (
+          <AuthStatusBanner
+            flowState={diagnostics.state}
+            onRetry={handleRetry}
+          />
+        )}
 
-      {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center px-4 py-2 sm:py-4">
-        <div className="w-full max-w-md space-y-6">
-          {/* Error Panel */}
-          {showErrorPanel && (
-            <AuthErrorPanel
-              message={mobileLoginError || profileCheckError || 'An error occurred'}
-              onRetry={handleRetry}
-              onReturnToLanding={handleReturnToLanding}
-            />
-          )}
+        {/* Main Card */}
+        <Card className="bg-card border-border">
+          <CardHeader className="space-y-2">
+            <CardTitle className="text-2xl font-bold text-center">
+              Welcome or Welcome back to SweetSteps
+            </CardTitle>
+            <CardDescription className="text-center text-muted-foreground">
+              Continue your SweetSteps journey — or begin one.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {attemptPhase === 'error' && mobileLoginError && (
+              <AuthErrorPanel
+                message={mobileLoginError}
+                onRetry={handleRetry}
+                onReturnToLanding={handleReturnToLanding}
+              />
+            )}
 
-          {/* Help Panel */}
-          {showHelpPanel && (
-            <AuthPopupHelpPanel
-              onRetry={handleRetry}
-            />
-          )}
+            {attemptPhase === 'error' && stalledState.isStalled && (
+              <AuthPopupHelpPanel onRetry={handleRetry} />
+            )}
 
-          {/* Signup Card */}
-          {!showErrorPanel && !showHelpPanel && (
-            <Card className="border-2 border-primary/20">
-              <CardHeader className="space-y-2">
-                <CardTitle className="text-2xl font-bold text-center">Create Account</CardTitle>
-                <CardDescription className="text-center">
-                  Sign up to start your SweetSteps journey
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Button
-                  size="lg"
-                  className="w-full text-base font-semibold h-12 rounded-xl"
-                  onClick={handleIISignup}
-                  disabled={isSignupDisabled}
-                >
-                  {isAttempting || attemptPhase !== 'idle' ? (
-                    <>
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      {attemptPhase === 'connecting' && 'Opening Internet Identity...'}
-                      {attemptPhase === 'validating' && 'Validating...'}
-                      {attemptPhase === 'checking-profile' && 'Checking profile...'}
-                      {attemptPhase === 'waiting-for-display-name' && 'Setting up...'}
-                    </>
-                  ) : warmup.state === 'warming' ? (
-                    <>
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      Preparing...
-                    </>
-                  ) : iiInitializing ? (
-                    <>
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      Initializing...
-                    </>
-                  ) : (
-                    'Sign Up with Internet Identity'
-                  )}
-                </Button>
+            <Button
+              onClick={handleSignup}
+              disabled={
+                isAttempting ||
+                iiIsLoggingIn ||
+                attemptPhase === 'validating' ||
+                attemptPhase === 'checking-profile' ||
+                attemptPhase === 'waiting-for-display-name' ||
+                attemptPhase === 'redirecting' ||
+                warmup.state === 'warming' ||
+                warmup.state === 'idle'
+              }
+              className="w-full rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              {isAttempting || iiIsLoggingIn || attemptPhase === 'validating' || attemptPhase === 'checking-profile' || attemptPhase === 'waiting-for-display-name' || attemptPhase === 'redirecting' ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {attemptPhase === 'connecting' && 'Opening Internet Identity...'}
+                  {attemptPhase === 'validating' && 'Validating...'}
+                  {attemptPhase === 'checking-profile' && 'Checking account...'}
+                  {attemptPhase === 'waiting-for-display-name' && 'Setting up...'}
+                  {attemptPhase === 'redirecting' && 'Redirecting...'}
+                </>
+              ) : (
+                'Continue with Internet Identity'
+              )}
+            </Button>
 
-                <div className="text-center text-sm text-muted-foreground">
-                  Already have an account?{' '}
-                  <a
-                    href="/login"
-                    className="text-primary hover:underline font-medium"
-                  >
-                    Log in
-                  </a>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+            <p className="text-xs text-center text-muted-foreground">
+              By continuing, you agree to our Terms of Service and Privacy Policy
+            </p>
+          </CardContent>
+        </Card>
 
-          {/* Diagnostics Panel (only in debug mode) */}
-          {debugAuth && (
-            <AuthDiagnosticsPanel
-              loginStatus={iiLoginStatus}
-              isLoggingIn={iiLoginStatus === 'logging-in'}
-              isInitializing={iiInitializing}
-              identity={iiIdentity}
-              attemptPhase={attemptPhase}
-              attemptElapsedMs={getElapsedMs()}
-              platformInfo={platformInfo}
-              stalledState={stalledState}
-            />
-          )}
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="w-full py-4 text-center text-sm text-muted-foreground">
-        © 2026. Built with 🤎 using{' '}
-        <a
-          href="https://caffeine.ai"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-primary hover:underline"
-        >
-          caffeine.ai
-        </a>
-      </footer>
+        {/* Debug Diagnostics Panel */}
+        {debugAuth && (
+          <AuthDiagnosticsPanel
+            loginStatus={iiLoginStatus}
+            isLoggingIn={iiIsLoggingIn}
+            isInitializing={iiInitializing}
+            identity={iiIdentity}
+            attemptPhase={attemptPhase}
+            attemptElapsedMs={getElapsedMs()}
+            platformInfo={platformInfo}
+            stalledState={stalledState}
+          />
+        )}
+      </div>
     </div>
   );
 }

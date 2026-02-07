@@ -120,7 +120,7 @@ export default function SweetSummit() {
       {/* Header with Logout and Delete Account */}
       <AuthenticatedHeader title="Sweet Summit" />
 
-      <div className="flex items-center justify-center px-6 py-16">
+      <div className="flex items-center justify-center px-6 py-8">
         <div className="w-full max-w-2xl mx-auto">
           <Card className="bg-transparent border-0 shadow-none">
             <CardHeader className="space-y-3 text-center">
@@ -133,7 +133,7 @@ export default function SweetSummit() {
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Carousel Content */}
-              <div className="relative overflow-hidden rounded-2xl min-h-[280px] md:min-h-[260px]">
+              <div className="relative overflow-hidden rounded-2xl h-[380px] md:h-[360px]">
                 {carouselSlides.map((slide, index) => {
                   const IconComponent = slide.icon;
                   return (
@@ -148,7 +148,7 @@ export default function SweetSummit() {
                       }`}
                     >
                       <Card className="bg-background border-border h-full">
-                        <CardContent className="p-5 md:p-6 space-y-3 flex flex-col items-center text-center">
+                        <CardContent className="p-5 md:p-6 space-y-3 flex flex-col items-center text-center h-full overflow-y-auto">
                           <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${slide.color} flex items-center justify-center border border-border`}>
                             <IconComponent className="w-8 h-8 text-foreground" />
                           </div>

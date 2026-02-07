@@ -1,17 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import { useInternetIdentity } from './useInternetIdentity';
-import type { UserProfile } from '../backend';
+import type { UserProfile, RewardType, TimeRange, InventorySummary } from '../backend';
 
-/**
- * Hook to get the current user's profile
- */
 export function useGetCallerUserProfile() {
   const { actor, isFetching: actorFetching } = useActor();
-  const { identity, isInitializing } = useInternetIdentity();
-
-  // Only run query when authenticated (not anonymous)
-  const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
 
   const query = useQuery<UserProfile | null>({
     queryKey: ['currentUserProfile'],
@@ -19,22 +11,19 @@ export function useGetCallerUserProfile() {
       if (!actor) throw new Error('Actor not available');
       return actor.getCallerUserProfile();
     },
-    // Only enable when actor is ready, not fetching, auth is initialized, and user is authenticated
-    enabled: !!actor && !actorFetching && !isInitializing && isAuthenticated,
+    enabled: !!actor && !actorFetching,
     retry: false,
   });
 
-  // Return custom state that properly reflects all dependencies
+  // Return custom state that properly reflects actor dependency and settled state
   return {
     ...query,
-    isLoading: actorFetching || isInitializing || query.isLoading,
-    isFetched: !!actor && !isInitializing && isAuthenticated && query.isFetched,
+    isLoading: actorFetching || query.isLoading,
+    isFetched: !!actor && query.isFetched,
+    isSettled: !!actor && (query.isSuccess || query.isError),
   };
 }
 
-/**
- * Hook to save the current user's profile
- */
 export function useSaveCallerUserProfile() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -45,15 +34,11 @@ export function useSaveCallerUserProfile() {
       return actor.saveCallerUserProfile(profile);
     },
     onSuccess: () => {
-      // Invalidate the user profile query to refetch
       queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
     },
   });
 }
 
-/**
- * Hook to delete the current user's data
- */
 export function useDeleteCallerUserData() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -64,8 +49,36 @@ export function useDeleteCallerUserData() {
       return actor.deleteCallerUserData();
     },
     onSuccess: () => {
-      // Clear all queries after deletion including rewards
-      queryClient.clear();
+      queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
+    },
+  });
+}
+
+export function useGetRewardsForCaller(timeRange: TimeRange) {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<InventorySummary>({
+    queryKey: ['rewards', timeRange],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.getRewardsForCaller(timeRange);
+    },
+    enabled: !!actor && !actorFetching,
+  });
+}
+
+export function useAddReward() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (rewardType: RewardType) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.addReward(rewardType);
+    },
+    onSuccess: () => {
+      // Invalidate all reward queries to refresh counts
+      queryClient.invalidateQueries({ queryKey: ['rewards'] });
     },
   });
 }

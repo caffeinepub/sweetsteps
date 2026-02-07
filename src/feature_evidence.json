@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-adjust-the-identity-confirmation-card-so-its-content-is-never-cut-off-make-the-card-height-fully-auto-no-implicit-explicit-fixed-height-constraints-reduce-internal-padding-slightly-where-needed-and-ensure-long-text-e-g-principal-wraps-without-overflowing",
-      "featureTitle": "Adjust the identity confirmation card so its content is never cut off: make the card height fully auto (no implicit/explicit fixed height constraints), reduce internal padding slightly where needed, and ensure long text (e.g., principal) wraps without overflowing.",
+      "featureId": "feature-update-only-the-selected-button-at-xpath-html-1-body-1-div-1-div-1-main-1-div-2-button-1-the-landing-page-continue-with-internet-identity-button-to-use-the-exact-same-visual-styling-as-the-weekly-mountain-page-primary-button-labeled-view-today-s-sweetsteps-same-tailwind-class-styling-for-height-typography-rounding-background-hover-and-text-colors",
+      "featureTitle": "Update ONLY the selected button at XPath /html[1]/body[1]/div[1]/div[1]/main[1]/div[2]/button[1] (the Landing page “Continue with Internet Identity” button) to use the exact same visual styling as the Weekly Mountain page primary button labeled “View Today's SweetSteps” (same Tailwind class styling for height, typography, rounding, background, hover, and text colors).",
       "files": [
-        "frontend/src/components/auth/IdentityConfirmationCard.tsx"
+        "frontend/src/pages/Landing.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -21,11 +21,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-reduce-the-padding-of-the-parent-container-that-wraps-the-affected-card-to-eliminate-overflow-with-a-significant-reduction-primarily-on-top-bottom-while-preserving-reasonable-left-right-padding",
-      "featureTitle": "Reduce the padding of the parent container that wraps the affected card to eliminate overflow, with a significant reduction primarily on top/bottom while preserving reasonable left/right padding.",
+      "featureId": "feature-remove-the-mountain-icon-from-inside-only-the-selected-button-at-xpath-html-1-body-1-div-1-div-1-main-1-div-2-button-1-so-the-button-content-renders-as-text-only-keep-the-existing-button-label-behavior-unchanged",
+      "featureTitle": "Remove the mountain icon from inside ONLY the selected button at XPath /html[1]/body[1]/div[1]/div[1]/main[1]/div[2]/button[1] so the button content renders as text-only (keep the existing button label/behavior unchanged).",
       "files": [
-        "frontend/src/pages/Login.tsx",
-        "frontend/src/pages/Signup.tsx"
+        "frontend/src/pages/Landing.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -37,26 +36,6 @@
       ],
       "testIds": [
         "REQ-2"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-replace-the-header-s-direct-logout-and-delete-account-buttons-with-a-small-hamburger-menu-in-authenticatedheader-that-contains-actions-for-logout-and-delete-account-keep-the-existing-delete-confirmation-dialog-and-preserve-current-disabled-loading-error-behavior-for-both-actions",
-      "featureTitle": "Replace the header’s direct Logout and Delete Account buttons with a small hamburger menu in AuthenticatedHeader that contains actions for Logout and Delete Account; keep the existing delete confirmation dialog and preserve current disabled/loading/error behavior for both actions.",
-      "files": [
-        "frontend/src/components/AccountActionsMenu.tsx",
-        "frontend/src/components/AuthenticatedHeader.tsx"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0"
-      ],
-      "testIds": [
-        "REQ-3"
       ],
       "confidence": "high"
     }
